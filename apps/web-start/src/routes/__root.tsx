@@ -1,13 +1,12 @@
 /// <reference types="vite/client" />
-import type { ReactNode } from 'react';
 import {
-  Outlet,
-  createRootRouteWithContext,
   HeadContent,
   Scripts,
+  createRootRouteWithContext,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools';
+import React from 'react';
 import TanStackQueryDevtools from '../integrations/devtools';
 import appCss from '../styles.css?url';
 import type { QueryClient } from '@tanstack/react-query';
@@ -44,8 +43,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+
       <head>
-        <HeadContent />
+        <HeadContent /><title></title>
       </head>
       <body>
         {children}

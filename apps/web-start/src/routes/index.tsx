@@ -1,14 +1,27 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { ArrowRight, LineChart, PiggyBank, Shield, Target, TrendingUp, Zap } from 'lucide-react';
+import { useAuth0 } from '@auth0/auth0-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, TrendingUp, Target, PiggyBank, LineChart, Shield, Zap } from 'lucide-react';
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { loginWithRedirect, isAuthenticated } = useAuth0();
+
+  const handleLogin = async () => {
+    if (isAuthenticated) {
+      window.location.href = '/dashboard';
+    } else {
+      await loginWithRedirect({
+        appState: { returnTo: '/dashboard' },
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-b from-blue-50 to-white">
       {/* Hero Section */}
@@ -25,11 +38,11 @@ function RouteComponent() {
             FinanceBuddy helps you track expenses, set goals, and make smarter financial decisions. Start your journey to financial freedom today.
           </p>
           <div className="flex gap-4 justify-center pt-4">
-            <Button size="lg" className="gap-2">
+            <Button size="lg" className="gap-2" onClick={handleLogin}>
               Get Started Free <ArrowRight className="w-4 h-4" />
             </Button>
-            <Button size="lg" variant="outline">
-              Learn More
+            <Button size="lg" variant="outline" onClick={handleLogin}>
+              Login
             </Button>
           </div>
         </div>
@@ -163,7 +176,7 @@ function RouteComponent() {
               Join thousands of users who have taken control of their financial future
             </CardDescription>
             <div className="pt-4">
-              <Button size="lg" variant="secondary" className="gap-2">
+              <Button size="lg" variant="secondary" className="gap-2" onClick={handleLogin}>
                 Start Your Free Trial <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
