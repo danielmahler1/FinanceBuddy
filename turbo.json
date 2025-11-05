@@ -4,6 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["FRONTEND_URL"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [
         "build/**",
