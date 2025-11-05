@@ -10,11 +10,8 @@ import { routeTree } from './routeTree.gen';
 export const getRouter = () => {
   const rqContext = TanstackQuery.getContext();
 
-  // Create the redirect URI based on the current origin, which may be undefined during SSR
-  const redirect_uri =
-    typeof window !== 'undefined'
-      ? window.location.origin + '/dashboard'
-      : undefined;
+  // Use the environment variable for redirect URI to support SSR
+  const redirect_uri = import.meta.env.VITE_AUTH0_CALLBACK_URL;
 
   const router = createRouter({
     routeTree,
