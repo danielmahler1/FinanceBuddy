@@ -1,18 +1,18 @@
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
+import {
+  CreditCard,
+  DollarSign,
+  LogOut,
+  PiggyBank,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  User,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  CreditCard,
-  PiggyBank,
-  LogOut,
-  User,
-} from 'lucide-react';
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
