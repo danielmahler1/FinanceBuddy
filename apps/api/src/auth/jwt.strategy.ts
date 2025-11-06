@@ -64,7 +64,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!auth) {
       const user = await this.prisma.user.create({
         data: {
-          email: payload.email ?? '${providerId}@${provider}.placeholder',
+          email: payload.email ?? `${providerId}@${provider}.placeholder`,
           authentications: {
             create: {
               provider,
@@ -72,10 +72,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             },
           },
         },
+        include: {
+          authentications: true,
+        },
       });
-      auth = { ...auth, user } as any;
+      auth = {
+        userId: user.id,
+        user,
+      } as any;
     } else {
-      // 3) Update user profile fields opportunistically (don’t overwrite with nulls)
+      // 3) Update user profile fields opportunistically (don't overwrite with nulls)
       await this.prisma.user.update({
         where: { id: auth.userId },
         data: {},
