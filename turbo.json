@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "env": ["AUTH0_ISSUER_URL", "AUTH0_AUDIENCE"],
+      "env": ["AUTH0_ISSUER_URL", "AUTH0_AUDIENCE", "FRONTEND_URL"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [
         "build/**",
