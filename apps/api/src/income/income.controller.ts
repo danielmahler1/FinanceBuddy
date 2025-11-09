@@ -8,8 +8,8 @@ import {
   Body,
 } from '@nestjs/common';
 import { IncomeService } from './income.service';
-import { CreateIncomeDto } from './dto/create-income.dto';
-import { UpdateIncomeDto } from './dto/update-income.dto';
+import { CreateIncomeDto } from '@repo/api/income/dto/create-income.dto';
+import { UpdateIncomeDto } from '@repo/api/income/dto/update-income.dto';
 
 @Controller('incomes')
 export class IncomeController {

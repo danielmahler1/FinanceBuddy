@@ -8,8 +8,8 @@ import {
   Body,
 } from '@nestjs/common';
 import { GoalService } from './goal.service';
-import { CreateGoalDto } from './dto/create-goal.dto';
-import { UpdateGoalDto } from './dto/update-goal.dto';
+import { CreateGoalDto } from '@repo/api/goal/dto/create-goal.dto';
+import { UpdateGoalDto } from '@repo/api/goal/dto/update-goal.dto';
 
 @Controller('goals')
 export class GoalController {

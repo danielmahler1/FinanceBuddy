@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { CreateIncomeDto } from './dto/create-income.dto';
-import { UpdateIncomeDto } from './dto/update-income.dto';
+import { CreateIncomeDto } from '@repo/api/income/dto/create-income.dto';
+import { UpdateIncomeDto } from '@repo/api/income/dto/update-income.dto';
 
 @Injectable()
 export class IncomeService {

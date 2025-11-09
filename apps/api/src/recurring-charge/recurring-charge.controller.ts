@@ -8,8 +8,8 @@ import {
   Body,
 } from '@nestjs/common';
 import { RecurringChargeService } from './recurring-charge.service';
-import { CreateRecurringChargeDto } from './dto/create-recurring-charge.dto';
-import { UpdateRecurringChargeDto } from './dto/update-recurring-charge.dto';
+import { CreateRecurringChargeDto } from '@repo/api/recurring-charge/dto/create-recurring-charge.dto';
+import { UpdateRecurringChargeDto } from '@repo/api/recurring-charge/dto/update-recurring-charge.dto';
 
 @Controller('recurring-charges')
 export class RecurringChargeController {
