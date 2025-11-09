@@ -11,7 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const allowedOrigins: string[] = [
-    'http://localhost:3000',
+    'http://localhost:3001',
     process.env.FRONTEND_URL,
   ].filter((v): v is string => typeof v === 'string');
 

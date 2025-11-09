@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute } from '@tanstack/react-router';
+import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import {
   CreditCard,
@@ -268,11 +268,12 @@ function Dashboard() {
                   <Target className="w-5 h-5" />
                   <span className="text-sm">Set Goal</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  <span className="text-sm">View Accounts</span>
-                  
-                </Button>
+                <Link to="/accounts">
+                  <Button variant="outline" className="h-20 flex flex-col gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    <span className="text-sm">View Accounts</span>
+                  </Button>
+                </Link>
                 <Button variant="outline" className="h-20 flex flex-col gap-2">
                   <User className="w-5 h-5" />
                   <span className="text-sm">Profile Settings</span>

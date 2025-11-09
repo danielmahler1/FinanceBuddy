@@ -12,6 +12,8 @@ import { AccountService } from './account.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtUser } from '../auth/jwt.strategy';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('accounts')
@@ -21,6 +23,11 @@ export class AccountController {
   @Get()
   findAll() {
     return this.accountService.findAll();
+  }
+
+  @Get('me')
+  getMine(@CurrentUser() user: JwtUser) {
+    return this.accountService.findByUserId(user.userId);
   }
 
   @Get(':id')

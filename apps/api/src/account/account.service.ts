@@ -11,6 +11,12 @@ export class AccountService {
     return this.prisma.account.findMany();
   }
 
+  async findByUserId(userId: string) {
+    return this.prisma.account.findMany({
+      where: { userId },
+    });
+  }
+
   async findOne(id: string) {
     const account = await this.prisma.account.findUnique({
       where: { id },
