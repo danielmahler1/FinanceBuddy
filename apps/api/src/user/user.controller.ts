@@ -10,6 +10,9 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from '@repo/api/user/dto/create-user.dto';
 import { UpdateUserDto } from '@repo/api/user/dto/update-user.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtUser } from '../auth/jwt.strategy';
 
 @Controller('users')
 export class UserController {

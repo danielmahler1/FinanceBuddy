@@ -10,6 +10,7 @@ import {
 import { GoalService } from './goal.service';
 import { CreateGoalDto } from '@repo/api/goal/dto/create-goal.dto';
 import { UpdateGoalDto } from '@repo/api/goal/dto/update-goal.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('goals')
 export class GoalController {

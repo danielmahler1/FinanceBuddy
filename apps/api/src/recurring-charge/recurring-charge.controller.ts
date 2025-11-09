@@ -10,6 +10,7 @@ import {
 import { RecurringChargeService } from './recurring-charge.service';
 import { CreateRecurringChargeDto } from '@repo/api/recurring-charge/dto/create-recurring-charge.dto';
 import { UpdateRecurringChargeDto } from '@repo/api/recurring-charge/dto/update-recurring-charge.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('recurring-charges')
 export class RecurringChargeController {

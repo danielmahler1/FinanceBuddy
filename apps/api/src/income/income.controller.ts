@@ -10,6 +10,7 @@ import {
 import { IncomeService } from './income.service';
 import { CreateIncomeDto } from '@repo/api/income/dto/create-income.dto';
 import { UpdateIncomeDto } from '@repo/api/income/dto/update-income.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('incomes')
 export class IncomeController {

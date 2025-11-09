@@ -10,6 +10,7 @@ import {
 import { AccountService } from './account.service';
 import { CreateAccountDto } from '@repo/api/account/dto/create-account.dto';
 import { UpdateAccountDto } from '@repo/api/account/dto/update-account.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('accounts')
 export class AccountController {
