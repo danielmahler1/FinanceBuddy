@@ -280,9 +280,11 @@ function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-4 gap-3">
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
-                  <DollarSign className="w-5 h-5" />
-                  <span className="text-sm">Add Transaction</span>
+                <Button asChild variant="outline" className="h-20 flex flex-col gap-2">
+                  <Link to="/transactions">
+                    <DollarSign className="w-5 h-5" />
+                    <span className="text-sm">Add Transaction</span>
+                  </Link>
                 </Button>
                 <Button variant="outline" className="h-20 flex flex-col gap-2">
                   <Target className="w-5 h-5" />
