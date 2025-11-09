@@ -17,6 +17,17 @@ export class AccountService {
     });
   }
 
+  async getTotalsByUserId(userId: string) {
+    const rows = await this.prisma.account.groupBy({
+      by: ['currency'],
+      where: { userId },
+      _sum: { value: true },
+    });
+    return {
+      totals: rows.map((r) => ({ currency: r.currency, total: r._sum.value ?? 0 })),
+    };
+  }
+
   async findOne(id: string) {
     const account = await this.prisma.account.findUnique({
       where: { id },

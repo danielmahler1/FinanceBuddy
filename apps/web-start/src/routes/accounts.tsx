@@ -1,9 +1,9 @@
 ﻿import React from 'react';
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
-import { CreditCard, Plus } from 'lucide-react';
+import { CreditCard, Plus, X } from 'lucide-react';
 import { useApiMutation, useApiQuery, useCurrentUser } from '@/integrations/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 type Account = {
@@ -34,8 +34,13 @@ function AccountsPage() {
     invalidateKeys: [['accounts', 'me']],
   });
 
+  const deleteAccount = useApiMutation<{ id: string }, void>({
+    endpoint: (v) => ({ path: `/accounts/${v.id}`, method: 'DELETE' }),
+    invalidateKeys: [['accounts', 'me']],
+  });
+
   const [showForm, setShowForm] = React.useState(false);
-  const [accountType, setAccountType] = React.useState<'checking' | 'Saving...' | 'credit'>('checking');
+  const [accountType, setAccountType] = React.useState<'checking' | 'savings' | 'credit'>('checking');
   const [currency, setCurrency] = React.useState<'USD' | 'EUR' | 'GBP'>('USD');
   const [value, setValue] = React.useState<string>('0');
 
@@ -54,6 +59,16 @@ function AccountsPage() {
     setValue('0');
     setAccountType('checking');
     setCurrency('USD');
+  }
+
+  async function onDelete(id: string) {
+    try {
+      const ok = window.confirm('Delete this account?');
+      if (!ok) return;
+      await deleteAccount.mutateAsync({ id });
+    } catch (err) {
+      // no-op; surfaced via invalidation/notifications if desired
+    }
   }
 
   if (isLoading || accountsQ.showLoading) {
@@ -101,7 +116,7 @@ function AccountsPage() {
               <CardDescription>Provide details for your new account</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={onSubmit} className="grid md:grid-cols-4 gap-4 items-end">
+              <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-4 items-end">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Type</label>
                   <select
@@ -109,12 +124,12 @@ function AccountsPage() {
                     value={accountType}
                     onChange={(e) =>
                       setAccountType(
-                        e.target.value as 'checking' | 'Saving...' | 'credit',
+                        e.target.value as 'checking' | 'savings' | 'credit',
                       )
                     }
                   >
                     <option value="checking">Checking</option>
-                    <option value="Saving...">Saving...</option>
+                    <option value="savings">Savings</option>
                     <option value="credit">Credit</option>
                   </select>
                 </div>
@@ -142,7 +157,7 @@ function AccountsPage() {
                     onChange={(e) => setValue(e.target.value)}
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 md:col-span-4 mt-2">
                   <Button type="submit" disabled={addAccount.isPending}>
                     {addAccount.isPending ? 'Saving...€¦' : 'Save Account'}
                   </Button>
@@ -178,6 +193,16 @@ function AccountsPage() {
             {accounts.map((acc) => (
               <Card key={acc.id} className="border-2">
                 <CardHeader>
+                  <CardAction>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Delete account"
+                      onClick={() => onDelete(acc.id)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </CardAction>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-blue-600" />
                     {acc.accountType.toUpperCase()}
@@ -188,7 +213,6 @@ function AccountsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-sm text-gray-500">Currency: {acc.currency}</div>
-                  <div className="text-sm text-gray-500">Account ID: {acc.id}</div>
                 </CardContent>
               </Card>
             ))}

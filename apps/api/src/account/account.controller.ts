@@ -30,6 +30,11 @@ export class AccountController {
     return this.accountService.findByUserId(user.userId);
   }
 
+  @Get('me/summary')
+  getMySummary(@CurrentUser() user: JwtUser) {
+    return this.accountService.getTotalsByUserId(user.userId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.accountService.findOne(id);

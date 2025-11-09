@@ -11,6 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useApiQuery } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -20,6 +21,23 @@ export const Route = createFileRoute('/dashboard')({
 
 function Dashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAuth0();
+  type AccountSummary = { totals: Array<{ currency: string; total: number }> };
+  const summaryQ = useApiQuery<AccountSummary>(
+    ['accounts', 'me', 'summary'],
+    '/accounts/me/summary',
+  );
+  const totals = summaryQ.data?.totals ?? [];
+  const totalsLabel = totals.length
+    ? totals
+        .map((t) =>
+          new Intl.NumberFormat(undefined, {
+            style: 'currency',
+            currency: t.currency,
+            maximumFractionDigits: 2,
+          }).format(t.total),
+        )
+        .join(' · ')
+    : '$0.00';
 
   // Show loading state
   if (isLoading) {
@@ -94,7 +112,9 @@ function Dashboard() {
                 <DollarSign className="h-4 w-4 text-gray-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$12,234.56</div>
+                <div className="text-2xl font-bold">
+                  {summaryQ.showLoading ? 'Loading…' : totalsLabel}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
                   <span className="text-green-600 font-medium">+2.5%</span> from last month
                 </p>
@@ -268,12 +288,12 @@ function Dashboard() {
                   <Target className="w-5 h-5" />
                   <span className="text-sm">Set Goal</span>
                 </Button>
-                <Link to="/accounts">
-                  <Button variant="outline" className="h-20 flex flex-col gap-2">
+                <Button asChild variant="outline" className="h-20 flex flex-col gap-2">
+                  <Link to="/accounts">
                     <CreditCard className="w-5 h-5" />
                     <span className="text-sm">View Accounts</span>
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
                 <Button variant="outline" className="h-20 flex flex-col gap-2">
                   <User className="w-5 h-5" />
                   <span className="text-sm">Profile Settings</span>
