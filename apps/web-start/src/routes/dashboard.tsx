@@ -271,6 +271,7 @@ function Dashboard() {
                 <Button variant="outline" className="h-20 flex flex-col gap-2">
                   <CreditCard className="w-5 h-5" />
                   <span className="text-sm">View Accounts</span>
+                  
                 </Button>
                 <Button variant="outline" className="h-20 flex flex-col gap-2">
                   <User className="w-5 h-5" />
