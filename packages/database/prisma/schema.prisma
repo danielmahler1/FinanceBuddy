@@ -26,8 +26,8 @@ model User {
 }
 
 model Authentication {
-  id         String   @id @default(uuid()) @map("id") @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
+  id         String   @id @default(uuid()) @map("id")
+  userId     String   @map("user_id")
   provider   String   @map("provider")
   providerId String   @map("provider_user_id")
   createdAt  DateTime @default(now()) @map("created_at")
@@ -70,11 +70,13 @@ model Transaction {
   id        String   @id @default(uuid())
   accountId String
   account   Account  @relation(fields: [accountId], references: [id])
-  type      String
+  type      String?
   amount    Float
   vendor    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([accountId, createdAt])
 }
 
 model RecurringCharge {

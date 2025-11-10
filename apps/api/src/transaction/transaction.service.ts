@@ -22,23 +22,73 @@ export class TransactionService {
   }
 
   async create(createTransactionDto: CreateTransactionDto) {
-    return this.prisma.transaction.create({
-      data: createTransactionDto,
+    const { accountId, amount } = createTransactionDto;
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.transaction.create({
+        data: createTransactionDto,
+      });
+      if (typeof amount === 'number' && Number.isFinite(amount) && amount !== 0) {
+        await tx.account.update({
+          where: { id: accountId },
+          data: { value: { increment: amount } },
+        });
+      }
+      return created;
     });
   }
 
   async update(id: string, updateTransactionDto: UpdateTransactionDto) {
-    await this.findOne(id); // Check if transaction exists
-    return this.prisma.transaction.update({
-      where: { id },
-      data: updateTransactionDto,
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.transaction.findUnique({ where: { id } });
+      if (!existing) {
+        throw new NotFoundException(`Transaction with ID ${id} not found`);
+      }
+
+      const oldAccountId = existing.accountId;
+      const oldAmount = existing.amount;
+
+      const newAccountId = updateTransactionDto.accountId ?? oldAccountId;
+      const newAmount =
+        typeof updateTransactionDto.amount === 'number' && Number.isFinite(updateTransactionDto.amount)
+          ? updateTransactionDto.amount
+          : oldAmount;
+
+      const updated = await tx.transaction.update({
+        where: { id },
+        data: updateTransactionDto,
+      });
+
+      if (newAccountId === oldAccountId) {
+        const diff = newAmount - oldAmount;
+        if (diff !== 0) {
+          await tx.account.update({ where: { id: oldAccountId }, data: { value: { increment: diff } } });
+        }
+      } else {
+        await tx.account.update({ where: { id: oldAccountId }, data: { value: { increment: -oldAmount } } });
+        await tx.account.update({ where: { id: newAccountId }, data: { value: { increment: newAmount } } });
+      }
+
+      return updated;
     });
   }
 
   async remove(id: string) {
-    await this.findOne(id); // Check if transaction exists
-    return this.prisma.transaction.delete({
-      where: { id },
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.transaction.findUnique({ where: { id } });
+      if (!existing) {
+        throw new NotFoundException(`Transaction with ID ${id} not found`);
+      }
+
+      const deleted = await tx.transaction.delete({ where: { id } });
+
+      if (typeof existing.amount === 'number' && Number.isFinite(existing.amount) && existing.amount !== 0) {
+        await tx.account.update({
+          where: { id: existing.accountId },
+          data: { value: { increment: -existing.amount } },
+        });
+      }
+
+      return deleted;
     });
   }
 }

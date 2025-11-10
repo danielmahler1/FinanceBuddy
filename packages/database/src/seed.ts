@@ -72,11 +72,14 @@ async function seed() {
         const numTx = randInt(5, 15);
         totalTransactions += numTx;
         for (let t = 0; t < numTx; t++) {
+          const dir = faker.helpers.arrayElement(["income", "expense"]);
+          const rawAmt = faker.number.float({ min: 1, max: 2000, fractionDigits: 2 });
+          const signedAmt = dir === "income" ? rawAmt : -rawAmt;
           await prisma.transaction.create({
             data: {
               accountId: account.id,
-              type: faker.helpers.arrayElement(["debit", "credit"]),
-              amount: faker.number.float({ min: 1, max: 2000, fractionDigits: 2 }),
+              type: dir,
+              amount: signedAmt,
               vendor: faker.company.name(),
             },
           });

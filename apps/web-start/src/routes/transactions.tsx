@@ -16,7 +16,7 @@ type Account = {
 
 type CreateTx = {
   accountId: string;
-  type: 'debit' | 'credit';
+  type: 'income' | 'expense';
   amount: number;
   vendor: string;
 };
@@ -37,7 +37,7 @@ function NewTransactionPage() {
 
   const [form, setForm] = React.useState<CreateTx>({
     accountId: '',
-    type: 'debit',
+    type: 'expense',
     amount: 0,
     vendor: '',
   });
@@ -78,7 +78,8 @@ function NewTransactionPage() {
     try {
       if (!form.accountId) throw new Error('Please choose an account');
       if (!form.amount || Number.isNaN(form.amount)) throw new Error('Enter an amount');
-      await createTx.mutateAsync({ ...form, amount: Number(form.amount) });
+      const signed = form.type === 'income' ? Math.abs(Number(form.amount)) : -Math.abs(Number(form.amount));
+      await createTx.mutateAsync({ ...form, amount: signed });
       navigate({ to: '/dashboard' });
     } catch (err: any) {
       setOcrError(err?.message ?? 'Failed to save');
@@ -199,10 +200,10 @@ function NewTransactionPage() {
                 <select
                   className="w-full border rounded-md h-10 px-3"
                   value={form.type}
-                  onChange={(e) => onChange({ type: e.target.value as 'debit' | 'credit' })}
+                  onChange={(e) => onChange({ type: e.target.value as 'income' | 'expense' })}
                 >
-                  <option value="debit">Debit</option>
-                  <option value="credit">Credit</option>
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
                 </select>
               </div>
 

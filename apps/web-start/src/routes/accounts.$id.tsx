@@ -94,8 +94,8 @@ function AccountTransactionsPage() {
                         {new Date(t.createdAt).toLocaleString()} · {t.type}
                       </div>
                     </div>
-                    <div className={`font-semibold ${t.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
-                      {t.type === 'credit' ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
+                    <div className={`font-semibold ${t.amount >= 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                      {t.amount >= 0 ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
                     </div>
                   </div>
                 ))}

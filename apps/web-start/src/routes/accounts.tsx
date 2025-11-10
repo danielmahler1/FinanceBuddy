@@ -83,7 +83,7 @@ function AccountsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Loading accounts...€¦</p>
+          <p className="mt-4 text-gray-600">Loading accounts...</p>
         </div>
       </div>
     );
@@ -166,7 +166,7 @@ function AccountsPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 md:col-span-4 mt-2">
                   <Button type="submit" disabled={addAccount.isPending}>
-                    {addAccount.isPending ? 'Saving...€¦' : 'Save Account'}
+                    {addAccount.isPending ? 'Saving...' : 'Save Account'}
                   </Button>
                   <Button
                     type="button"
@@ -191,7 +191,7 @@ function AccountsPage() {
             <CardHeader>
               <CardTitle>No Accounts Found</CardTitle>
               <CardDescription>
-                You donâ€™t have any accounts yet.
+                You don't have any accounts yet.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -295,7 +295,7 @@ function AccountTransactionsModal({
             <div className="py-12 text-center text-gray-600">Loading transactions…</div>
           ) : txQ.error ? (
             <div className="py-12 text-center text-red-600">
-              {(txQ.error as Error).message || 'Failed to load transactions.'}
+              {(txQ.error).message || 'Failed to load transactions.'}
             </div>
           ) : (txQ.data ?? []).length === 0 ? (
             <div className="py-12 text-center text-gray-600">No transactions yet.</div>
@@ -309,8 +309,8 @@ function AccountTransactionsModal({
                       {new Date(t.createdAt).toLocaleString()} · {t.type}
                     </div>
                   </div>
-                  <div className={`font-semibold ${t.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
-                    {t.type === 'credit' ? '+' : '-'}
+                  <div className={`font-semibold ${t.amount >= 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                    {t.amount >= 0 ? '+' : '-'}
                     {formatCurrency(Math.abs(t.amount), account.currency)}
                   </div>
                 </div>
