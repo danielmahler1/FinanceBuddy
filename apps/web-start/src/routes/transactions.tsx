@@ -21,6 +21,9 @@ type CreateTx = {
   vendor: string;
 };
 
+// Narrow the video element type to include srcObject explicitly
+type VideoEl = HTMLVideoElement & { srcObject: MediaStream | null };
+
 export const Route = createFileRoute('/transactions')({
   component: NewTransactionPage,
 });
@@ -45,12 +48,11 @@ function NewTransactionPage() {
   const [ocrError, setOcrError] = React.useState<string | null>(null);
   const [camOpen, setCamOpen] = React.useState(false);
   const [camError, setCamError] = React.useState<string | null>(null);
-  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+  const videoRef = React.useRef<VideoEl | null>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
 
   const onChange = (patch: Partial<CreateTx>) => setForm((f) => ({ ...f, ...patch }));
 
-  // Ensure cleanup hook runs on every render path (before any early returns)
   React.useEffect(() => {
     return () => {
       const s = streamRef.current;
@@ -115,7 +117,7 @@ function NewTransactionPage() {
       setCamOpen(true);
       const v = videoRef.current;
       if (v) {
-        (v as unknown as { srcObject: MediaStream }).srcObject = stream;
+        v.srcObject = stream;
         await v.play();
       }
     } catch (e) {
@@ -146,14 +148,14 @@ function NewTransactionPage() {
     const blob: Blob | null = await new Promise((resolve) =>
       canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.95),
     );
-    if (blob) {
-      const file = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
-      await handleFile(file);
+    if (!blob) {
+      setCamError('Could not capture image. Please try again.');
+      return;
     }
+    const file = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+    await handleFile(file);
     closeCamera();
   }
-
-  
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -242,11 +244,11 @@ function NewTransactionPage() {
                     }}
                   />
                   <span className="border rounded-md px-4 py-2 inline-flex items-center gap-2 cursor-pointer">
-                    <ImageIcon className="w-4 h-4" /> {ocrLoading ? 'Scanning…€¦' : 'Scan Receipt'}
+                    <ImageIcon className="w-4 h-4" /> {ocrLoading ? 'Scanning…' : 'Scan Receipt'}
                   </span>
                 </label>
                 <Button type="submit" disabled={createTx.isPending} className="gap-2">
-                  <Save className="w-4 h-4" /> {createTx.isPending ? 'Saving…€¦' : 'Save Transaction'}
+                  <Save className="w-4 h-4" /> {createTx.isPending ? 'Saving…' : 'Save Transaction'}
                 </Button>
               </div>
 

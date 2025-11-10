@@ -24,6 +24,10 @@ export class TransactionService {
   async create(createTransactionDto: CreateTransactionDto) {
     const { accountId, amount } = createTransactionDto;
     return this.prisma.$transaction(async (tx) => {
+      const acct = await tx.account.findUnique({ where: { id: accountId } });
+      if (!acct) {
+        throw new NotFoundException(`Account with ID ${accountId} not found`);
+      }
       const created = await tx.transaction.create({
         data: createTransactionDto,
       });
@@ -52,6 +56,19 @@ export class TransactionService {
         typeof updateTransactionDto.amount === 'number' && Number.isFinite(updateTransactionDto.amount)
           ? updateTransactionDto.amount
           : oldAmount;
+
+      if (newAccountId !== oldAccountId) {
+        const [oldAcc, newAcc] = await Promise.all([
+          tx.account.findUnique({ where: { id: oldAccountId } }),
+          tx.account.findUnique({ where: { id: newAccountId } }),
+        ]);
+        if (!oldAcc) {
+          throw new NotFoundException(`Account with ID ${oldAccountId} not found`);
+        }
+        if (!newAcc) {
+          throw new NotFoundException(`Account with ID ${newAccountId} not found`);
+        }
+      }
 
       const updated = await tx.transaction.update({
         where: { id },

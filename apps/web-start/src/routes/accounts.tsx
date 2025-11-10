@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import { CreditCard, Plus, X } from 'lucide-react';
 import { useApiMutation, useApiQuery, useCurrentUser } from '@/integrations/api';
@@ -22,7 +22,6 @@ export const Route = createFileRoute('/accounts')({
 
 function AccountsPage() {
   const { isAuthenticated, isLoading } = useAuth0();
-  const navigate = useNavigate();
   const me = useCurrentUser();
   const accountsQ = useApiQuery<Array<Account>>(['accounts', 'me'], '/accounts/me');
 
@@ -276,7 +275,7 @@ function AccountTransactionsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4">
         <div className="flex items-start justify-between p-4 border-b">
           <div>

@@ -70,7 +70,7 @@ model Transaction {
   id        String   @id @default(uuid())
   accountId String
   account   Account  @relation(fields: [accountId], references: [id])
-  type      String?
+  type      String
   amount    Float
   vendor    String
   createdAt DateTime @default(now())
