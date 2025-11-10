@@ -6,14 +6,11 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
 } from '@nestjs/common';
 import { GoalService } from './goal.service';
 import { CreateGoalDto } from '@repo/api/goal/dto/create-goal.dto';
 import { UpdateGoalDto } from '@repo/api/goal/dto/update-goal.dto';
-import { AuthGuard } from '@nestjs/passport';
 
-@UseGuards(AuthGuard('jwt'))
 @Controller('goals')
 export class GoalController {
   constructor(private readonly goalService: GoalService) {}
