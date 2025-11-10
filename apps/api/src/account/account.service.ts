@@ -11,10 +11,28 @@ export class AccountService {
     return this.prisma.account.findMany();
   }
 
-  async findAllForUser(userId: string) {
+  async findByUserId(userId: string) {
     return this.prisma.account.findMany({
       where: { userId },
     });
+  }
+
+  async findTransactionsByAccountId(accountId: string) {
+    return this.prisma.transaction.findMany({
+      where: { accountId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getTotalsByUserId(userId: string) {
+    const rows = await this.prisma.account.groupBy({
+      by: ['currency'],
+      where: { userId },
+      _sum: { value: true },
+    });
+    return {
+      totals: rows.map((r) => ({ currency: r.currency, total: r._sum.value ?? 0 })),
+    };
   }
 
   async findOne(id: string, userId: string) {

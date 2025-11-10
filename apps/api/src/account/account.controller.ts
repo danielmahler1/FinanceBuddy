@@ -22,7 +22,22 @@ export class AccountController {
 
   @Get()
   findAll(@CurrentUser() user: JwtUser) {
-    return this.accountService.findAllForUser(user.userId);
+    return this.accountService.findByUserId(user.userId);
+  }
+
+  @Get('me')
+  getMine(@CurrentUser() user: JwtUser) {
+    return this.accountService.findByUserId(user.userId);
+  }
+
+  @Get('me/summary')
+  getMySummary(@CurrentUser() user: JwtUser) {
+    return this.accountService.getTotalsByUserId(user.userId);
+  }
+
+  @Get(':id/transactions')
+  getAccountTransactions(@Param('id') id: string) {
+    return this.accountService.findTransactionsByAccountId(id);
   }
 
   @Get(':id')

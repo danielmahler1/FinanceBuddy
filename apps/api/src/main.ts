@@ -10,13 +10,16 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const allowedOrigins = [
-    'http://localhost:3000',
+  const allowedOrigins: string[] = [
+    'http://localhost:3001',
     process.env.FRONTEND_URL,
-  ]
+  ].filter((v): v is string => typeof v === 'string');
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error('CORS policy violation'), false);

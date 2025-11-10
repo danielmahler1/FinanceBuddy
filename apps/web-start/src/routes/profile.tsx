@@ -1,19 +1,20 @@
-import { Navigate, createFileRoute, Link } from '@tanstack/react-router';
+import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import {
-  User,
-  Mail,
-  Phone,
+  ArrowLeft,
   Calendar,
+  Camera,
+  CheckCircle,
   DollarSign,
   Download,
-  Camera,
+  Mail,
+  Phone,
   Save,
-  CheckCircle,
-  XCircle,
+  User,
   X,
-  ArrowLeft,
+  XCircle,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,7 +24,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+
 
 export const Route = createFileRoute('/profile')({
   component: ProfileSettings,

@@ -26,13 +26,12 @@ model User {
 }
 
 model Authentication {
-  id         String   @id @default(uuid()) @map("id") @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  provider   String   @map("provider") // e.g., "auth0", "google", "github"
-  providerId String   @map("provider_user_id") // e.g., the user ID from the provider
+  id         String   @id @default(uuid()) @map("id")
+  userId     String   @map("user_id")
+  provider   String   @map("provider")
+  providerId String   @map("provider_user_id")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  // relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerId])
@@ -76,6 +75,8 @@ model Transaction {
   vendor    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([accountId, createdAt])
 }
 
 model RecurringCharge {
