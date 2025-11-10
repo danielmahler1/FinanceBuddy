@@ -1,7 +1,7 @@
 export class CreateTransactionDto {
-  accountId: string;
-  type: string;
-  amount: number;
-  vendor: string;
+  accountId!: string;
+  type!: string;
+  amount!: number;
+  vendor!: string;
 }
 
