@@ -6,38 +6,47 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { IncomeService } from './income.service';
 import { CreateIncomeDto } from '@repo/api/income/dto/create-income.dto';
 import { UpdateIncomeDto } from '@repo/api/income/dto/update-income.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtUser } from '../auth/jwt.strategy';
 
 @Controller('incomes')
+@UseGuards(AuthGuard('jwt'))
 export class IncomeController {
   constructor(private readonly incomeService: IncomeService) {}
 
   @Get()
-  findAll() {
-    return this.incomeService.findAll();
+  findAll(@CurrentUser() user: JwtUser) {
+    return this.incomeService.findAllForUser(user.userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.incomeService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.incomeService.findOne(id, user.userId);
   }
 
   @Post()
-  create(@Body() createIncomeDto: CreateIncomeDto) {
-    return this.incomeService.create(createIncomeDto);
+  create(@Body() createIncomeDto: CreateIncomeDto, @CurrentUser() user: JwtUser) {
+    return this.incomeService.create(createIncomeDto, user.userId);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateIncomeDto: UpdateIncomeDto) {
-    return this.incomeService.update(id, updateIncomeDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateIncomeDto: UpdateIncomeDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.incomeService.update(id, updateIncomeDto, user.userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.incomeService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.incomeService.remove(id, user.userId);
   }
 }
 
