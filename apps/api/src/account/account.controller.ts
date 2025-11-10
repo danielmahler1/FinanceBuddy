@@ -35,6 +35,11 @@ export class AccountController {
     return this.accountService.getTotalsByUserId(user.userId);
   }
 
+  @Get(':id/transactions')
+  getAccountTransactions(@Param('id') id: string) {
+    return this.accountService.findTransactionsByAccountId(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.accountService.findOne(id);

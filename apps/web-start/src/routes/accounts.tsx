@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
+import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import { CreditCard, Plus, X } from 'lucide-react';
 import { useApiMutation, useApiQuery, useCurrentUser } from '@/integrations/api';
@@ -22,6 +22,7 @@ export const Route = createFileRoute('/accounts')({
 
 function AccountsPage() {
   const { isAuthenticated, isLoading } = useAuth0();
+  const navigate = useNavigate();
   const me = useCurrentUser();
   const accountsQ = useApiQuery<Array<Account>>(['accounts', 'me'], '/accounts/me');
 
@@ -43,6 +44,12 @@ function AccountsPage() {
   const [accountType, setAccountType] = React.useState<'checking' | 'savings' | 'credit'>('checking');
   const [currency, setCurrency] = React.useState<'USD' | 'EUR' | 'GBP'>('USD');
   const [value, setValue] = React.useState<string>('0');
+  const [selected, setSelected] = React.useState<null | {
+    id: string;
+    accountType: string;
+    value: number;
+    currency: string;
+  }>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -191,14 +198,22 @@ function AccountsPage() {
         ) : (
           <div className="grid md:grid-cols-3 gap-6">
             {accounts.map((acc) => (
-              <Card key={acc.id} className="border-2">
+              <Card
+                key={acc.id}
+                className="border-2 hover:shadow transition-shadow cursor-pointer"
+                onClick={() => setSelected({ id: acc.id, accountType: acc.accountType, value: acc.value, currency: acc.currency })}
+              >
                 <CardHeader>
                   <CardAction>
                     <Button
                       variant="ghost"
                       size="icon-sm"
                       aria-label="Delete account"
-                      onClick={() => onDelete(acc.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        void onDelete(acc.id);
+                      }}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -219,6 +234,9 @@ function AccountsPage() {
           </div>
         )}
       </main>
+      {selected && (
+        <AccountTransactionsModal account={selected} onClose={() => setSelected(null)} />
+      )}
     </div>
   );
 }
@@ -233,4 +251,74 @@ function formatCurrency(value: number, currency: string) {
   } catch {
     return `$${value.toFixed(2)} ${currency}`;
   }
+}
+
+type Tx = {
+  id: string;
+  accountId: string;
+  type: string;
+  amount: number;
+  vendor: string;
+  createdAt: string;
+};
+
+function AccountTransactionsModal({
+  account,
+  onClose,
+}: {
+  account: { id: string; accountType: string; value: number; currency: string };
+  onClose: () => void;
+}) {
+  const txQ = useApiQuery<Array<Tx>>(
+    ['accounts', account.id, 'transactions'],
+    `/accounts/${account.id}/transactions`,
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4">
+        <div className="flex items-start justify-between p-4 border-b">
+          <div>
+            <div className="text-sm text-gray-500">Account</div>
+            <div className="text-lg font-semibold">{account.accountType.toUpperCase()}</div>
+            <div className="text-sm text-gray-600">
+              Current Total: {formatCurrency(account.value, account.currency)}
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" aria-label="Close" onClick={onClose}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+        <div className="p-4 max-h-[70vh] overflow-y-auto">
+          {txQ.showLoading ? (
+            <div className="py-12 text-center text-gray-600">Loading transactions…</div>
+          ) : txQ.error ? (
+            <div className="py-12 text-center text-red-600">
+              {(txQ.error as Error).message || 'Failed to load transactions.'}
+            </div>
+          ) : (txQ.data ?? []).length === 0 ? (
+            <div className="py-12 text-center text-gray-600">No transactions yet.</div>
+          ) : (
+            <div className="divide-y">
+              {(txQ.data ?? []).map((t) => (
+                <div key={t.id} className="flex items-center justify-between py-3">
+                  <div>
+                    <div className="font-medium text-gray-900">{t.vendor}</div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(t.createdAt).toLocaleString()} · {t.type}
+                    </div>
+                  </div>
+                  <div className={`font-semibold ${t.type === 'credit' ? 'text-green-600' : 'text-gray-900'}`}>
+                    {t.type === 'credit' ? '+' : '-'}
+                    {formatCurrency(Math.abs(t.amount), account.currency)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

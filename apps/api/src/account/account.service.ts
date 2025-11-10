@@ -17,6 +17,13 @@ export class AccountService {
     });
   }
 
+  async findTransactionsByAccountId(accountId: string) {
+    return this.prisma.transaction.findMany({
+      where: { accountId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getTotalsByUserId(userId: string) {
     const rows = await this.prisma.account.groupBy({
       by: ['currency'],
