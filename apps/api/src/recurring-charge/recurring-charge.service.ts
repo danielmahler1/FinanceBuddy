@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { CreateRecurringChargeDto } from './dto/create-recurring-charge.dto';
-import { UpdateRecurringChargeDto } from './dto/update-recurring-charge.dto';
+import { CreateRecurringChargeDto } from '@repo/api/recurring-charge/dto/create-recurring-charge.dto';
+import { UpdateRecurringChargeDto } from '@repo/api/recurring-charge/dto/update-recurring-charge.dto';
 
 @Injectable()
 export class RecurringChargeService {

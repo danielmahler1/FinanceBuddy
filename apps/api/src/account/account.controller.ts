@@ -6,16 +6,13 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
 } from '@nestjs/common';
 import { AccountService } from './account.service';
-import { CreateAccountDto } from './dto/create-account.dto';
-import { UpdateAccountDto } from './dto/update-account.dto';
-import { AuthGuard } from '@nestjs/passport';
+import { CreateAccountDto } from '@repo/api/account/dto/create-account.dto';
+import { UpdateAccountDto } from '@repo/api/account/dto/update-account.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtUser } from '../auth/jwt.strategy';
 
-@UseGuards(AuthGuard('jwt'))
 @Controller('accounts')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
