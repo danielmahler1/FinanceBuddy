@@ -6,12 +6,14 @@ import {
   Delete,
   Param,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { CreateAccountDto } from '@repo/api/account/dto/create-account.dto';
 import { UpdateAccountDto } from '@repo/api/account/dto/update-account.dto';
 import { AuthGuard } from '@nestjs/passport';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('accounts')
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
