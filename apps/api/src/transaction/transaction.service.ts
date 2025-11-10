@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateTransactionDto } from '@repo/api/transaction/dto/create-transaction.dto';
 import { UpdateTransactionDto } from '@repo/api/transaction/dto/update-transaction.dto';
@@ -11,20 +11,39 @@ export class TransactionService {
     return this.prisma.transaction.findMany();
   }
 
-  async findOne(id: string) {
+  async findAllForUser(userId: string) {
+    return this.prisma.transaction.findMany({
+      where: {
+        account: {
+          userId,
+        },
+      },
+      include: {
+        account: true,
+      },
+    });
+  }
+
+  async findOne(id: string, userId: string) {
     const transaction = await this.prisma.transaction.findUnique({
       where: { id },
+      include: {
+        account: true,
+      },
     });
     if (!transaction) {
       throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
+    if (transaction.account.userId !== userId) {
+      throw new ForbiddenException('You do not have access to this transaction');
+    }
     return transaction;
   }
 
-  async create(createTransactionDto: CreateTransactionDto) {
+  async create(createTransactionDto: CreateTransactionDto, userId: string) {
     const { accountId, amount } = createTransactionDto;
     return this.prisma.$transaction(async (tx) => {
-      const acct = await tx.account.findUnique({ where: { id: accountId } });
+      const acct = await tx.account.findFirst({ where: { id: accountId, userId } });
       if (!acct) {
         throw new NotFoundException(`Account with ID ${accountId} not found`);
       }
@@ -41,9 +60,9 @@ export class TransactionService {
     });
   }
 
-  async update(id: string, updateTransactionDto: UpdateTransactionDto) {
+  async update(id: string, updateTransactionDto: UpdateTransactionDto, userId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.transaction.findUnique({ where: { id } });
+      const existing = await tx.transaction.findFirst({ where: { id, account: { userId } } });
       if (!existing) {
         throw new NotFoundException(`Transaction with ID ${id} not found`);
       }
@@ -59,8 +78,8 @@ export class TransactionService {
 
       if (newAccountId !== oldAccountId) {
         const [oldAcc, newAcc] = await Promise.all([
-          tx.account.findUnique({ where: { id: oldAccountId } }),
-          tx.account.findUnique({ where: { id: newAccountId } }),
+          tx.account.findFirst({ where: { id: oldAccountId, userId } }),
+          tx.account.findFirst({ where: { id: newAccountId, userId } }),
         ]);
         if (!oldAcc) {
           throw new NotFoundException(`Account with ID ${oldAccountId} not found`);
@@ -89,9 +108,9 @@ export class TransactionService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.transaction.findUnique({ where: { id } });
+      const existing = await tx.transaction.findFirst({ where: { id, account: { userId } } });
       if (!existing) {
         throw new NotFoundException(`Transaction with ID ${id} not found`);
       }
