@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateAccountDto } from '@repo/api/account/dto/create-account.dto';
 import { UpdateAccountDto } from '@repo/api/account/dto/update-account.dto';
@@ -11,12 +11,21 @@ export class AccountService {
     return this.prisma.account.findMany();
   }
 
-  async findOne(id: string) {
+  async findAllForUser(userId: string) {
+    return this.prisma.account.findMany({
+      where: { userId },
+    });
+  }
+
+  async findOne(id: string, userId: string) {
     const account = await this.prisma.account.findUnique({
       where: { id },
     });
     if (!account) {
       throw new NotFoundException(`Account with ID ${id} not found`);
+    }
+    if (account.userId !== userId) {
+      throw new ForbiddenException('You do not have access to this account');
     }
     return account;
   }
@@ -27,16 +36,16 @@ export class AccountService {
     });
   }
 
-  async update(id: string, updateAccountDto: UpdateAccountDto) {
-    await this.findOne(id); // Check if account exists
+  async update(id: string, updateAccountDto: UpdateAccountDto, userId: string) {
+    await this.findOne(id, userId); // Check if account exists and user owns it
     return this.prisma.account.update({
       where: { id },
       data: updateAccountDto,
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id); // Check if account exists
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId); // Check if account exists and user owns it
     return this.prisma.account.delete({
       where: { id },
     });
