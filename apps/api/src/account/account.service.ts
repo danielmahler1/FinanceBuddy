@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { CreateAccountDto } from './dto/create-account.dto';
-import { UpdateAccountDto } from './dto/update-account.dto';
+import { CreateAccountDto } from '@repo/api/account/dto/create-account.dto';
+import { UpdateAccountDto } from '@repo/api/account/dto/update-account.dto';
 
 @Injectable()
 export class AccountService {
@@ -11,12 +11,39 @@ export class AccountService {
     return this.prisma.account.findMany();
   }
 
-  async findOne(id: string) {
+  async findByUserId(userId: string) {
+    return this.prisma.account.findMany({
+      where: { userId },
+    });
+  }
+
+  async findTransactionsByAccountId(accountId: string) {
+    return this.prisma.transaction.findMany({
+      where: { accountId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getTotalsByUserId(userId: string) {
+    const rows = await this.prisma.account.groupBy({
+      by: ['currency'],
+      where: { userId },
+      _sum: { value: true },
+    });
+    return {
+      totals: rows.map((r) => ({ currency: r.currency, total: r._sum.value ?? 0 })),
+    };
+  }
+
+  async findOne(id: string, userId: string) {
     const account = await this.prisma.account.findUnique({
       where: { id },
     });
     if (!account) {
       throw new NotFoundException(`Account with ID ${id} not found`);
+    }
+    if (account.userId !== userId) {
+      throw new ForbiddenException('You do not have access to this account');
     }
     return account;
   }
@@ -27,16 +54,16 @@ export class AccountService {
     });
   }
 
-  async update(id: string, updateAccountDto: UpdateAccountDto) {
-    await this.findOne(id); // Check if account exists
+  async update(id: string, updateAccountDto: UpdateAccountDto, userId: string) {
+    await this.findOne(id, userId); // Check if account exists and user owns it
     return this.prisma.account.update({
       where: { id },
       data: updateAccountDto,
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id); // Check if account exists
+  async remove(id: string, userId: string) {
+    await this.findOne(id, userId); // Check if account exists and user owns it
     return this.prisma.account.delete({
       where: { id },
     });

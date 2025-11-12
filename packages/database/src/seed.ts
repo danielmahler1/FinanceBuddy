@@ -70,19 +70,27 @@ async function seed() {
 
         // Transactions
         const numTx = randInt(5, 15);
+        let txSum = 0;
         totalTransactions += numTx;
         for (let t = 0; t < numTx; t++) {
+          const dir = faker.helpers.arrayElement(["income", "expense"]);
+          const rawAmt = faker.number.float({ min: 1, max: 2000, fractionDigits: 2 });
+          const signedAmt = dir === "income" ? rawAmt : -rawAmt;
           await prisma.transaction.create({
             data: {
               accountId: account.id,
-              type: faker.helpers.arrayElement(["debit", "credit"]),
-              amount: faker.number.float({ min: 1, max: 2000, fractionDigits: 2 }),
+              type: dir,
+              amount: signedAmt,
               vendor: faker.company.name(),
             },
           });
+          txSum += signedAmt;
         }
+        await prisma.account.update({
+          where: { id: account.id },
+          data: { value: value + txSum },
+        });
 
-        // Recurring charges (maybe)
         if (Math.random() < 0.4) {
           const numRecurring = randInt(1, 3);
           totalRecurring += numRecurring;
@@ -100,7 +108,6 @@ async function seed() {
           }
         }
 
-        // Income (maybe)
         if (Math.random() < 0.5) {
           const numIncome = randInt(1, 2);
           totalIncome += numIncome;
@@ -117,7 +124,6 @@ async function seed() {
         }
       }
 
-      // Goals for user
       const numGoals = randInt(0, 3);
       totalGoals += numGoals;
       for (let g = 0; g < numGoals; g++) {

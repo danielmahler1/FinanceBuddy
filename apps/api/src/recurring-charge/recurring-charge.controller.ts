@@ -8,42 +8,48 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
-import { RecurringChargeService } from './recurring-charge.service';
-import { CreateRecurringChargeDto } from './dto/create-recurring-charge.dto';
-import { UpdateRecurringChargeDto } from './dto/update-recurring-charge.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { RecurringChargeService } from './recurring-charge.service';
+import { CreateRecurringChargeDto } from '@repo/api/recurring-charge/dto/create-recurring-charge.dto';
+import { UpdateRecurringChargeDto } from '@repo/api/recurring-charge/dto/update-recurring-charge.dto';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtUser } from '../auth/jwt.strategy';
 
-@UseGuards(AuthGuard('jwt'))
 @Controller('recurring-charges')
+@UseGuards(AuthGuard('jwt'))
 export class RecurringChargeController {
   constructor(private readonly recurringChargeService: RecurringChargeService) {}
 
   @Get()
-  findAll() {
-    return this.recurringChargeService.findAll();
+  findAll(@CurrentUser() user: JwtUser) {
+    return this.recurringChargeService.findAllForUser(user.userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.recurringChargeService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.recurringChargeService.findOne(id, user.userId);
   }
 
   @Post()
-  create(@Body() createRecurringChargeDto: CreateRecurringChargeDto) {
-    return this.recurringChargeService.create(createRecurringChargeDto);
+  create(
+    @Body() createRecurringChargeDto: CreateRecurringChargeDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.recurringChargeService.create(createRecurringChargeDto, user.userId);
   }
 
   @Put(':id')
   update(
     @Param('id') id: string,
     @Body() updateRecurringChargeDto: UpdateRecurringChargeDto,
+    @CurrentUser() user: JwtUser,
   ) {
-    return this.recurringChargeService.update(id, updateRecurringChargeDto);
+    return this.recurringChargeService.update(id, updateRecurringChargeDto, user.userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.recurringChargeService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.recurringChargeService.remove(id, user.userId);
   }
 }
 

@@ -8,28 +8,27 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
-import {AuthGuard} from '@nestjs/passport';
+import { AuthGuard } from '@nestjs/passport';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from '@repo/api/user/dto/create-user.dto';
+import { UpdateUserDto } from '@repo/api/user/dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtUser } from '../auth/jwt.strategy';
 
-@UseGuards(AuthGuard('jwt'))
 @Controller('users')
+@UseGuards(AuthGuard('jwt'))
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get('me')
+  getCurrentUser(@CurrentUser() user: JwtUser) {
+    return this.userService.findOne(user.userId);
+  }
 
   @Get()
   findAll() {
     return this.userService.findAll();
   }
-
-  @Get('me')
-  getMe(@CurrentUser() user: JwtUser){
-    return this.userService.findOne(user.userId);
-  }
-
 
   @Get(':id')
   findOne(@Param('id') id: string) {
