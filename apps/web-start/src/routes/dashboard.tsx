@@ -11,10 +11,9 @@ import {
   User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useApiQuery } from '@/integrations/api';
+import { useApiQuery, useCurrentUser } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useCurrentUser } from '@/integrations/api';
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
@@ -22,6 +21,7 @@ export const Route = createFileRoute('/dashboard')({
 
 function Dashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAuth0();
+  const { showLoading: userLoading, error: userError } = useCurrentUser();
   type AccountSummary = { totals: Array<{ currency: string; total: number }> };
   const summaryQ = useApiQuery<AccountSummary>(
     ['accounts', 'me', 'summary'],

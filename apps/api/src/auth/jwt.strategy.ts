@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import * as dotenv from 'dotenv';
 import { PrismaService } from 'src/prisma.service';
+import type { Request } from 'express';
 
 dotenv.config();
 
@@ -13,6 +14,8 @@ type JwtPayload = {
   aud: string | string[];
   scope?: string;
   email?: string;
+  given_name?: string;
+  family_name?: string;
 };
 
 export interface JwtUser {
@@ -44,15 +47,40 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       audience: process.env.AUTH0_AUDIENCE,
       issuer: `${process.env.AUTH0_ISSUER_URL}`,
       algorithms: ['RS256'],
+      passReqToCallback: true,
     });
   }
 
-  async validate(payload: JwtPayload): Promise<JwtUser> {
+  private async fetchUserInfo(token: string): Promise<{
+    email?: string;
+    given_name?: string;
+    family_name?: string;
+  }> {
+    const res = await fetch(`${process.env.AUTH0_ISSUER_URL}userinfo`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      throw new Error(`userinfo failed: ${res.status}`);
+    }
+    return (await res.json()) as any;
+  }
+
+  async validate(req: Request, payload: JwtPayload): Promise<JwtUser> {
     // You can see the JWT here
-    console.log('JWT payload', payload);
+    // console.log('JWT payload', payload);
 
     const { sub } = payload;
     const { provider, providerId } = splitSub(sub);
+
+    let profile: { email?: string; given_name?: string; family_name?: string } | undefined;
+    try {
+      const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+      if (token) {
+        profile = await this.fetchUserInfo(token).catch(() => undefined);
+      }
+    } catch {
+      // ignore userinfo failures; proceed with whatever we have
+    }
 
     // 1) Find Authentication by provider+providerId
     let auth = await this.prisma.authentication.findFirst({
@@ -60,32 +88,47 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       include: { user: true },
     });
 
-    // 2) If missing, create User + Authentication (using whatever claims we have)
+    // 2) If missing, create User and Authentication
     if (!auth) {
-      const user = await this.prisma.user.create({
-        data: {
-          email: payload.email ?? `${providerId}@${provider}.placeholder`,
-          authentications: {
-            create: {
-              provider,
-              providerId,
-            },
+      await this.prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: profile?.email ?? payload.email ?? `${providerId}@${provider}.placeholder`,
           },
-        },
-        include: {
-          authentications: true,
-        },
+        });
+
+        await tx.authentication.create({
+          data: {
+            provider,
+            providerId,
+            userId: user.id,
+          },
+        });
+
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            email: profile?.email ?? payload.email ?? undefined,
+            firstName: profile?.given_name ?? undefined,
+            lastName: profile?.family_name ?? undefined,
+          },
+        });
       });
-      auth = {
-        userId: user.id,
-        user,
-      } as any;
+
+      auth = await this.prisma.authentication.findFirst({
+        where: { provider, providerId },
+        include: { user: true },
+      });
     } else {
-      // 3) Update user profile fields opportunistically (don't overwrite with nulls)
-      await this.prisma.user.update({
-        where: { id: auth.userId },
-        data: {},
-      });
+      // 3) Update user profile fields opportunistically
+      const updates: Record<string, string> = {};
+      const email = profile?.email ?? payload.email;
+      if (email) updates.email = email;
+      if (profile?.given_name) updates.firstName = profile.given_name;
+      if (profile?.family_name) updates.lastName = profile.family_name;
+      if (Object.keys(updates).length) {
+        await this.prisma.user.update({ where: { id: auth.userId }, data: updates });
+      }
     }
 
     return {

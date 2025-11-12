@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RecurringChargeService } from './recurring-charge.service';
-import { CreateRecurringChargeDto } from '@repo/api/recurring-charge/dto/create-recurring-charge.dto';
-import { UpdateRecurringChargeDto } from '@repo/api/recurring-charge/dto/update-recurring-charge.dto';
+import { CreateRecurringChargeDto } from '@repo/api';
+import { UpdateRecurringChargeDto } from '@repo/api';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { JwtUser } from '../auth/jwt.strategy';
+import type { JwtUser } from '../auth/jwt.strategy';
 
 @Controller('recurring-charges')
 @UseGuards(AuthGuard('jwt'))
