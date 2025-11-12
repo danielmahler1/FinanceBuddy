@@ -49,7 +49,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<JwtUser> {
     // You can see the JWT here
-    // console.log('JWT payload', payload);
+    console.log('JWT payload', payload);
 
     const { sub } = payload;
     const { provider, providerId } = splitSub(sub);
