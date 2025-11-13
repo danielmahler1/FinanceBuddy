@@ -166,8 +166,8 @@ function NewTransactionPage() {
             Add Transaction
           </h1>
           <Button asChild variant="outline" className="gap-2">
-            <Link to="/accounts">
-              <ArrowLeft className="w-4 h-4" /> Back to Accounts
+            <Link to="/dashboard">
+              <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </Link>
           </Button>
         </div>
