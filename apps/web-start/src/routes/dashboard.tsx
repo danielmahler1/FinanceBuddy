@@ -65,11 +65,11 @@ function Dashboard() {
     : '$0.00';
 
   // Fetch goals
-  const goalsQ = useApiQuery<Goal[]>(['goals'], '/goals');
+  const goalsQ = useApiQuery<Array<Goal>>(['goals'], '/goals');
   const goals = goalsQ.data ?? [];
 
   // Fetch transactions
-  const transactionsQ = useApiQuery<Transaction[]>(['transactions'], '/transactions');
+  const transactionsQ = useApiQuery<Array<Transaction>>(['transactions'], '/transactions');
   const allTransactions = transactionsQ.data ?? [];
 
   // Get recent transactions (last 5)

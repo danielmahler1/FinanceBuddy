@@ -25,6 +25,14 @@ export class UserController {
     return this.userService.findOne(user.userId);
   }
 
+  @Put('me')
+  updateCurrentUser(
+    @CurrentUser() user: JwtUser,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.userService.update(user.userId, updateUserDto);
+  }
+
   @Get()
   findAll() {
     return this.userService.findAll();

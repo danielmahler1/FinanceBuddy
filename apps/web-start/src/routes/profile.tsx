@@ -14,7 +14,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -24,7 +24,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useApiQuery } from '@/integrations/api';
+import { useApiMutation, useApiQuery } from '@/integrations/api';
 
 type Account = {
   id: string;
@@ -61,23 +61,73 @@ export const Route = createFileRoute('/profile')({
   component: ProfileSettings,
 });
 
+type UserProfile = {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  currency?: string;
+};
+
 function ProfileSettings() {
   const { user, isAuthenticated, isLoading } = useAuth0();
 
-  // Fetch user's data for export
-  const accountsQ = useApiQuery<Account[]>(['accounts', 'me'], '/accounts/me');
-  const goalsQ = useApiQuery<Goal[]>(['goals'], '/goals');
-  const transactionsQ = useApiQuery<Transaction[]>(['transactions'], '/transactions');
+  // Fetch user's data from database
+  const userProfileQ = useApiQuery<UserProfile>(['users', 'me'], '/users/me');
+  const accountsQ = useApiQuery<Array<Account>>(['accounts', 'me'], '/accounts/me');
+  const goalsQ = useApiQuery<Array<Goal>>(['goals'], '/goals');
+  const transactionsQ = useApiQuery<Array<Transaction>>(['transactions'], '/transactions');
 
-  // Local state for form fields (using Auth0 user data as initial values)
+  // Mutation for updating user profile
+  type UpdateUserPayload = {
+    name?: string;
+    phone?: string;
+    dateOfBirth?: string;
+    currency?: string;
+  };
+  const updateUserMutation = useApiMutation<UpdateUserPayload, unknown>({
+    path: '/users/me',
+    method: 'PUT',
+    invalidateKeys: [['users', 'me']],
+  });
+
+  // Local state for form fields
   const [formData, setFormData] = useState({
-    firstName: user?.given_name || '',
-    lastName: user?.family_name || '',
-    email: user?.email || '',
+    firstName: '',
+    lastName: '',
+    email: '',
     phone: '',
     dateOfBirth: '',
     currency: 'USD',
   });
+
+  // Populate form data when user profile loads
+  useEffect(() => {
+    if (userProfileQ.data) {
+      const profile = userProfileQ.data;
+      setFormData({
+        firstName: profile.firstName || user?.given_name || '',
+        lastName: profile.lastName || user?.family_name || '',
+        email: profile.email || user?.email || '',
+        phone: profile.phone || '',
+        dateOfBirth: profile.dateOfBirth || '',
+        currency: profile.currency || 'USD',
+      });
+    } else if (user && !userProfileQ.showLoading) {
+      // Fallback to Auth0 data if no profile data yet
+      setFormData({
+        firstName: user.given_name || '',
+        lastName: user.family_name || '',
+        email: user.email || '',
+        phone: '',
+        dateOfBirth: '',
+        currency: 'USD',
+      });
+    }
+  }, [userProfileQ.data, user, userProfileQ.showLoading]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState<{
@@ -98,7 +148,7 @@ function ProfileSettings() {
   }
 
   // Redirect to home if not authenticated (only after loading is complete)
-  if (!isLoading && !isAuthenticated) {
+  if (!isAuthenticated) {
     return <Navigate to="/" />;
   }
 
@@ -109,23 +159,20 @@ function ProfileSettings() {
   const handleSave = async () => {
     setIsSaving(true);
     setNotification(null);
-    
+
     try {
-      // Simulate API call with random success/failure for demo
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      // Randomly fail 20% of the time for demo purposes
-      // Remove this in production and use actual API response
-      const randomFail = Math.random() < 0.2;
-      if (randomFail) {
-        throw new Error('Failed to update profile');
-      }
-      
+      await updateUserMutation.mutateAsync({
+        name: `${formData.firstName} ${formData.lastName}`,
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        currency: formData.currency,
+      });
+
       setNotification({
         type: 'success',
         message: 'Profile updated successfully!',
       });
-      
+
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
         setNotification(null);
@@ -135,7 +182,7 @@ function ProfileSettings() {
         type: 'error',
         message: 'Failed to update profile. Please try again.',
       });
-      
+
       // Auto-hide error message after 7 seconds
       setTimeout(() => {
         setNotification(null);
@@ -404,11 +451,11 @@ function ProfileSettings() {
                     />
                   </div>
                   <div className="mt-2 flex items-center gap-2">
-                    {user?.email_verified && (
+                    {user && user.email_verified ? (
                       <Badge variant="secondary" className="text-green-600">
                         ✓ Verified
                       </Badge>
-                    )}
+                    ) : null}
                     <p className="text-xs text-gray-500">
                       Email cannot be changed
                     </p>
