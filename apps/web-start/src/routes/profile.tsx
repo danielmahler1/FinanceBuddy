@@ -24,7 +24,38 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useApiQuery } from '@/integrations/api';
 
+type Account = {
+  id: string;
+  userId: string;
+  accountType: string;
+  value: number;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Goal = {
+  id: string;
+  userId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Transaction = {
+  id: string;
+  accountId: string;
+  type: string;
+  amount: number;
+  vendor: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export const Route = createFileRoute('/profile')({
   component: ProfileSettings,
@@ -33,13 +64,18 @@ export const Route = createFileRoute('/profile')({
 function ProfileSettings() {
   const { user, isAuthenticated, isLoading } = useAuth0();
 
+  // Fetch user's data for export
+  const accountsQ = useApiQuery<Account[]>(['accounts', 'me'], '/accounts/me');
+  const goalsQ = useApiQuery<Goal[]>(['goals'], '/goals');
+  const transactionsQ = useApiQuery<Transaction[]>(['transactions'], '/transactions');
+
   // Local state for form fields (using Auth0 user data as initial values)
   const [formData, setFormData] = useState({
     firstName: user?.given_name || '',
     lastName: user?.family_name || '',
     email: user?.email || '',
-    phone: '+1 (555) 123-4567', // Mock data
-    dateOfBirth: '1990-01-15', // Mock data
+    phone: '',
+    dateOfBirth: '',
     currency: 'USD',
   });
 
@@ -110,7 +146,10 @@ function ProfileSettings() {
   };
 
   const handleExportData = () => {
-    // Mock export functionality
+    const accounts = accountsQ.data ?? [];
+    const goals = goalsQ.data ?? [];
+    const transactions = transactionsQ.data ?? [];
+
     const exportData = {
       user: {
         name: `${formData.firstName} ${formData.lastName}`,
@@ -118,10 +157,29 @@ function ProfileSettings() {
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth,
       },
-      accounts: [
-        { name: 'Main Checking', balance: 5234.56 },
-        { name: 'Emergency Fund', balance: 12450.0 },
-      ],
+      accounts: accounts.map(acc => ({
+        id: acc.id,
+        type: acc.accountType,
+        balance: acc.value,
+        currency: acc.currency,
+        createdAt: acc.createdAt,
+      })),
+      goals: goals.map(goal => ({
+        id: goal.id,
+        name: goal.name,
+        currentAmount: goal.currentAmount,
+        targetAmount: goal.targetAmount,
+        status: goal.status,
+        createdAt: goal.createdAt,
+      })),
+      transactions: transactions.map(txn => ({
+        id: txn.id,
+        accountId: txn.accountId,
+        type: txn.type,
+        amount: txn.amount,
+        vendor: txn.vendor,
+        createdAt: txn.createdAt,
+      })),
       exportDate: new Date().toISOString(),
     };
 
