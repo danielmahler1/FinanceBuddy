@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserService } from './user.service';
-import { CreateUserDto } from '@repo/api/user/dto/create-user.dto';
-import { UpdateUserDto } from '@repo/api/user/dto/update-user.dto';
+import { CreateUserDto } from '@repo/api';
+import { UpdateUserDto } from '@repo/api';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { JwtUser } from '../auth/jwt.strategy';
+import type { JwtUser } from '../auth/jwt.strategy';
 
 @Controller('users')
 @UseGuards(AuthGuard('jwt'))

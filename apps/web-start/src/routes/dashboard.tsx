@@ -11,7 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useApiQuery } from '@/integrations/api';
+import { useApiQuery, useCurrentUser } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -21,6 +21,7 @@ export const Route = createFileRoute('/dashboard')({
 
 function Dashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAuth0();
+  const { showLoading: userLoading, error: userError } = useCurrentUser();
   type AccountSummary = { totals: Array<{ currency: string; total: number }> };
   const summaryQ = useApiQuery<AccountSummary>(
     ['accounts', 'me', 'summary'],
@@ -40,7 +41,7 @@ function Dashboard() {
     : '$0.00';
 
   // Show loading state
-  if (isLoading) {
+  if (isLoading || userLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -54,6 +55,21 @@ function Dashboard() {
   // Redirect to home if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/" />;
+  }
+
+  // Show error if API call failed
+  if (userError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 font-semibold">Error loading user data</p>
+          <p className="text-gray-600 mt-2">{userError.message}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const handleLogout = () => {

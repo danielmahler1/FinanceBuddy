@@ -70,4 +70,4 @@ pnpm-debug.log*
 server/dist
 public/dist
 
-AGENTS.md
+/AGENTS.md

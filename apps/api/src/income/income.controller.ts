@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { IncomeService } from './income.service';
-import { CreateIncomeDto } from '@repo/api/income/dto/create-income.dto';
-import { UpdateIncomeDto } from '@repo/api/income/dto/update-income.dto';
+import { CreateIncomeDto } from '@repo/api';
+import { UpdateIncomeDto } from '@repo/api';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { JwtUser } from '../auth/jwt.strategy';
+import type { JwtUser } from '../auth/jwt.strategy';
 
 @Controller('incomes')
 @UseGuards(AuthGuard('jwt'))
