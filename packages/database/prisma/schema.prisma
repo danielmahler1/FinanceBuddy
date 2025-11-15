@@ -13,12 +13,16 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  firstName String?
-  lastName  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String   @unique
+  firstName   String?
+  lastName    String?
+  name        String?
+  phone       String?
+  dateOfBirth String?
+  currency    String?  @default("USD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   accounts        Account[]
   goals           Goal[]
@@ -27,7 +31,7 @@ model User {
 
 model Authentication {
   id         String   @id @default(uuid()) @map("id")
-  userId     String   @map("user_id")
+  userId     String   @db.Uuid @map("user_id")
   provider   String   @map("provider")
   providerId String   @map("provider_user_id")
   createdAt  DateTime @default(now()) @map("created_at")

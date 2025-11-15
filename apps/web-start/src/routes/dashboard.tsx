@@ -19,10 +19,34 @@ export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
 });
 
+type Goal = {
+  id: string;
+  userId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Transaction = {
+  id: string;
+  accountId: string;
+  type: string;
+  amount: number;
+  vendor: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type AccountSummary = { totals: Array<{ currency: string; total: number }> };
+
 function Dashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAuth0();
   const { showLoading: userLoading, error: userError } = useCurrentUser();
-  type AccountSummary = { totals: Array<{ currency: string; total: number }> };
+
+  // Fetch account summary
   const summaryQ = useApiQuery<AccountSummary>(
     ['accounts', 'me', 'summary'],
     '/accounts/me/summary',
@@ -39,6 +63,56 @@ function Dashboard() {
         )
         .join(' · ')
     : '$0.00';
+
+  // Fetch goals
+  const goalsQ = useApiQuery<Array<Goal>>(['goals'], '/goals');
+  const goals = goalsQ.data ?? [];
+
+  // Fetch transactions
+  const transactionsQ = useApiQuery<Array<Transaction>>(['transactions'], '/transactions');
+  const allTransactions = transactionsQ.data ?? [];
+
+  // Get recent transactions (last 5)
+  const recentTransactions = [...allTransactions]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
+
+  // Calculate income and expenses from transactions
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthTransactions = allTransactions.filter(
+    (t) => new Date(t.createdAt) >= startOfMonth
+  );
+
+  const monthlyIncome = thisMonthTransactions
+    .filter((t) => t.amount > 0)
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const monthlyExpenses = Math.abs(
+    thisMonthTransactions
+      .filter((t) => t.amount < 0)
+      .reduce((sum, t) => sum + t.amount, 0)
+  );
+
+  // Calculate total savings from goals
+  const totalSavings = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+  const totalGoalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+  const savingsPercentage = totalGoalTarget > 0
+    ? Math.round((totalSavings / totalGoalTarget) * 100)
+    : 0;
+
+  // Format relative date
+  const formatRelativeDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
 
   // Show loading state
   if (isLoading || userLoading) {
@@ -145,7 +219,11 @@ function Dashboard() {
                 <TrendingUp className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$5,420.00</div>
+                <div className="text-2xl font-bold">
+                  {transactionsQ.showLoading
+                    ? 'Loading…'
+                    : `$${monthlyIncome.toFixed(2)}`}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">This month</p>
               </CardContent>
             </Card>
@@ -158,7 +236,11 @@ function Dashboard() {
                 <TrendingDown className="h-4 w-4 text-red-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$3,128.45</div>
+                <div className="text-2xl font-bold">
+                  {transactionsQ.showLoading
+                    ? 'Loading…'
+                    : `$${monthlyExpenses.toFixed(2)}`}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">This month</p>
               </CardContent>
             </Card>
@@ -171,9 +253,18 @@ function Dashboard() {
                 <PiggyBank className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$8,450.00</div>
+                <div className="text-2xl font-bold">
+                  {goalsQ.showLoading
+                    ? 'Loading…'
+                    : `$${totalSavings.toFixed(2)}`}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  <span className="text-green-600 font-medium">85%</span> of goal
+                  {savingsPercentage > 0 && (
+                    <>
+                      <span className="text-green-600 font-medium">{savingsPercentage}%</span> of goal
+                    </>
+                  )}
+                  {savingsPercentage === 0 && 'Set a goal to track progress'}
                 </p>
               </CardContent>
             </Card>
@@ -191,36 +282,39 @@ function Dashboard() {
                 <CardDescription>Your latest financial activity</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: 'Grocery Store', amount: -125.5, date: 'Today' },
-                    { name: 'Salary Deposit', amount: 5420.0, date: 'Yesterday' },
-                    { name: 'Electric Bill', amount: -89.99, date: '2 days ago' },
-                    { name: 'Coffee Shop', amount: -12.5, date: '3 days ago' },
-                  ].map((transaction, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between border-b pb-3 last:border-0"
-                    >
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {transaction.name}
-                        </p>
-                        <p className="text-sm text-gray-500">{transaction.date}</p>
-                      </div>
+                {transactionsQ.showLoading ? (
+                  <div className="text-center text-gray-500">Loading transactions...</div>
+                ) : recentTransactions.length === 0 ? (
+                  <div className="text-center text-gray-500">No transactions yet</div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentTransactions.map((transaction) => (
                       <div
-                        className={`font-semibold ${
-                          transaction.amount > 0
-                            ? 'text-green-600'
-                            : 'text-gray-900'
-                        }`}
+                        key={transaction.id}
+                        className="flex items-center justify-between border-b pb-3 last:border-0"
                       >
-                        {transaction.amount > 0 ? '+' : ''}$
-                        {Math.abs(transaction.amount).toFixed(2)}
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {transaction.vendor}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatRelativeDate(transaction.createdAt)}
+                          </p>
+                        </div>
+                        <div
+                          className={`font-semibold ${
+                            transaction.amount > 0
+                              ? 'text-green-600'
+                              : 'text-gray-900'
+                          }`}
+                        >
+                          {transaction.amount > 0 ? '+' : ''}$
+                          {Math.abs(transaction.amount).toFixed(2)}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -234,54 +328,43 @@ function Dashboard() {
                 <CardDescription>Track your savings progress</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    {
-                      name: 'Emergency Fund',
-                      current: 8450,
-                      target: 10000,
-                      color: 'bg-blue-600',
-                    },
-                    {
-                      name: 'Vacation',
-                      current: 2300,
-                      target: 5000,
-                      color: 'bg-purple-600',
-                    },
-                    {
-                      name: 'New Car',
-                      current: 12000,
-                      target: 25000,
-                      color: 'bg-green-600',
-                    },
-                  ].map((goal, i) => {
-                    const percentage = Math.round(
-                      (goal.current / goal.target) * 100
-                    );
-                    return (
-                      <div key={i} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900">
-                              {goal.name}
+                {goalsQ.showLoading ? (
+                  <div className="text-center text-gray-500">Loading goals...</div>
+                ) : goals.length === 0 ? (
+                  <div className="text-center text-gray-500">No goals yet</div>
+                ) : (
+                  <div className="space-y-4">
+                    {goals.map((goal, i) => {
+                      const percentage = Math.round(
+                        (goal.currentAmount / goal.targetAmount) * 100
+                      );
+                      const colors = ['bg-blue-600', 'bg-purple-600', 'bg-green-600', 'bg-orange-600', 'bg-pink-600'];
+                      const color = colors[i % colors.length];
+                      return (
+                        <div key={goal.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-900">
+                                {goal.name}
+                              </p>
+                              <Badge variant="secondary">{percentage}%</Badge>
+                            </div>
+                            <p className="text-sm text-gray-600">
+                              ${goal.currentAmount.toLocaleString()} / $
+                              {goal.targetAmount.toLocaleString()}
                             </p>
-                            <Badge variant="secondary">{percentage}%</Badge>
                           </div>
-                          <p className="text-sm text-gray-600">
-                            ${goal.current.toLocaleString()} / $
-                            {goal.target.toLocaleString()}
-                          </p>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`${color} h-2 rounded-full transition-all`}
+                              style={{ width: `${Math.min(percentage, 100)}%` }}
+                            ></div>
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`${goal.color} h-2 rounded-full transition-all`}
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
