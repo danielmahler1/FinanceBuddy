@@ -14,7 +14,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -24,24 +24,110 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useApiMutation, useApiQuery } from '@/integrations/api';
 
+type Account = {
+  id: string;
+  userId: string;
+  accountType: string;
+  value: number;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Goal = {
+  id: string;
+  userId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Transaction = {
+  id: string;
+  accountId: string;
+  type: string;
+  amount: number;
+  vendor: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export const Route = createFileRoute('/profile')({
   component: ProfileSettings,
 });
 
+type UserProfile = {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  currency?: string;
+};
+
 function ProfileSettings() {
   const { user, isAuthenticated, isLoading } = useAuth0();
 
-  // Local state for form fields (using Auth0 user data as initial values)
+  // Fetch user's data from database
+  const userProfileQ = useApiQuery<UserProfile>(['users', 'me'], '/users/me');
+  const accountsQ = useApiQuery<Array<Account>>(['accounts', 'me'], '/accounts/me');
+  const goalsQ = useApiQuery<Array<Goal>>(['goals'], '/goals');
+  const transactionsQ = useApiQuery<Array<Transaction>>(['transactions'], '/transactions');
+
+  // Mutation for updating user profile
+  type UpdateUserPayload = {
+    name?: string;
+    phone?: string;
+    dateOfBirth?: string;
+    currency?: string;
+  };
+  const updateUserMutation = useApiMutation<UpdateUserPayload, unknown>({
+    path: '/users/me',
+    method: 'PUT',
+    invalidateKeys: [['users', 'me']],
+  });
+
+  // Local state for form fields
   const [formData, setFormData] = useState({
-    firstName: user?.given_name || '',
-    lastName: user?.family_name || '',
-    email: user?.email || '',
-    phone: '+1 (555) 123-4567', // Mock data
-    dateOfBirth: '1990-01-15', // Mock data
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
     currency: 'USD',
   });
+
+  // Populate form data when user profile loads
+  useEffect(() => {
+    if (userProfileQ.data) {
+      const profile = userProfileQ.data;
+      setFormData({
+        firstName: profile.firstName || user?.given_name || '',
+        lastName: profile.lastName || user?.family_name || '',
+        email: profile.email || user?.email || '',
+        phone: profile.phone || '',
+        dateOfBirth: profile.dateOfBirth || '',
+        currency: profile.currency || 'USD',
+      });
+    } else if (user && !userProfileQ.showLoading) {
+      // Fallback to Auth0 data if no profile data yet
+      setFormData({
+        firstName: user.given_name || '',
+        lastName: user.family_name || '',
+        email: user.email || '',
+        phone: '',
+        dateOfBirth: '',
+        currency: 'USD',
+      });
+    }
+  }, [userProfileQ.data, user, userProfileQ.showLoading]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [notification, setNotification] = useState<{
@@ -62,7 +148,7 @@ function ProfileSettings() {
   }
 
   // Redirect to home if not authenticated (only after loading is complete)
-  if (!isLoading && !isAuthenticated) {
+  if (!isAuthenticated) {
     return <Navigate to="/" />;
   }
 
@@ -73,23 +159,20 @@ function ProfileSettings() {
   const handleSave = async () => {
     setIsSaving(true);
     setNotification(null);
-    
+
     try {
-      // Simulate API call with random success/failure for demo
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      // Randomly fail 20% of the time for demo purposes
-      // Remove this in production and use actual API response
-      const randomFail = Math.random() < 0.2;
-      if (randomFail) {
-        throw new Error('Failed to update profile');
-      }
-      
+      await updateUserMutation.mutateAsync({
+        name: `${formData.firstName} ${formData.lastName}`,
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        currency: formData.currency,
+      });
+
       setNotification({
         type: 'success',
         message: 'Profile updated successfully!',
       });
-      
+
       // Auto-hide success message after 5 seconds
       setTimeout(() => {
         setNotification(null);
@@ -99,7 +182,7 @@ function ProfileSettings() {
         type: 'error',
         message: 'Failed to update profile. Please try again.',
       });
-      
+
       // Auto-hide error message after 7 seconds
       setTimeout(() => {
         setNotification(null);
@@ -110,7 +193,10 @@ function ProfileSettings() {
   };
 
   const handleExportData = () => {
-    // Mock export functionality
+    const accounts = accountsQ.data ?? [];
+    const goals = goalsQ.data ?? [];
+    const transactions = transactionsQ.data ?? [];
+
     const exportData = {
       user: {
         name: `${formData.firstName} ${formData.lastName}`,
@@ -118,10 +204,29 @@ function ProfileSettings() {
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth,
       },
-      accounts: [
-        { name: 'Main Checking', balance: 5234.56 },
-        { name: 'Emergency Fund', balance: 12450.0 },
-      ],
+      accounts: accounts.map(acc => ({
+        id: acc.id,
+        type: acc.accountType,
+        balance: acc.value,
+        currency: acc.currency,
+        createdAt: acc.createdAt,
+      })),
+      goals: goals.map(goal => ({
+        id: goal.id,
+        name: goal.name,
+        currentAmount: goal.currentAmount,
+        targetAmount: goal.targetAmount,
+        status: goal.status,
+        createdAt: goal.createdAt,
+      })),
+      transactions: transactions.map(txn => ({
+        id: txn.id,
+        accountId: txn.accountId,
+        type: txn.type,
+        amount: txn.amount,
+        vendor: txn.vendor,
+        createdAt: txn.createdAt,
+      })),
       exportDate: new Date().toISOString(),
     };
 
@@ -346,11 +451,11 @@ function ProfileSettings() {
                     />
                   </div>
                   <div className="mt-2 flex items-center gap-2">
-                    {user?.email_verified && (
+                    {user && user.email_verified ? (
                       <Badge variant="secondary" className="text-green-600">
                         ✓ Verified
                       </Badge>
-                    )}
+                    ) : null}
                     <p className="text-xs text-gray-500">
                       Email cannot be changed
                     </p>

@@ -35,7 +35,7 @@ function NewTransactionPage() {
   const createTx = useApiMutation<CreateTx, unknown>({
     path: '/transactions',
     method: 'POST',
-    invalidateKeys: [['accounts', 'me']],
+    invalidateKeys: [['accounts', 'me'], ['transactions'], ['accounts', 'me', 'summary']],
   });
 
   const [form, setForm] = React.useState<CreateTx>({
