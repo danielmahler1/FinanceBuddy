@@ -21,6 +21,8 @@ type CreateTx = {
   vendor: string;
 };
 
+type CreateTxForm = Omit<CreateTx, 'amount'> & { amount: string };
+
 // Narrow the video element type to include srcObject explicitly
 type VideoEl = HTMLVideoElement & { srcObject: MediaStream | null };
 
@@ -38,10 +40,10 @@ function NewTransactionPage() {
     invalidateKeys: [['accounts', 'me']],
   });
 
-  const [form, setForm] = React.useState<CreateTx>({
+  const [form, setForm] = React.useState<CreateTxForm>({
     accountId: '',
     type: 'expense',
-    amount: 0,
+    amount: '',
     vendor: '',
   });
   const [ocrLoading, setOcrLoading] = React.useState(false);
@@ -51,7 +53,7 @@ function NewTransactionPage() {
   const videoRef = React.useRef<VideoEl | null>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
 
-  const onChange = (patch: Partial<CreateTx>) => setForm((f) => ({ ...f, ...patch }));
+  const onChange = (patch: Partial<CreateTxForm>) => setForm((f) => ({ ...f, ...patch }));
 
   React.useEffect(() => {
     return () => {
@@ -79,9 +81,16 @@ function NewTransactionPage() {
     setOcrError(null);
     try {
       if (!form.accountId) throw new Error('Please choose an account');
-      if (!form.amount || Number.isNaN(form.amount)) throw new Error('Enter an amount');
-      const signed = form.type === 'income' ? Math.abs(Number(form.amount)) : -Math.abs(Number(form.amount));
-      await createTx.mutateAsync({ ...form, amount: signed });
+      if (!form.amount || Number.isNaN(Number(form.amount))) throw new Error('Enter an amount');
+      const numericAmount = Number(form.amount);
+      const signed =
+        form.type === 'income' ? Math.abs(numericAmount) : -Math.abs(numericAmount);
+      await createTx.mutateAsync({
+        accountId: form.accountId,
+        type: form.type,
+        vendor: form.vendor,
+        amount: signed,
+      });
       navigate({ to: '/dashboard' });
     } catch (err: any) {
       setOcrError(err?.message ?? 'Failed to save');
@@ -96,7 +105,7 @@ function NewTransactionPage() {
       const parsed = parseReceipt(text);
       setForm((f) => ({
         ...f,
-        amount: parsed.amount ?? f.amount,
+        amount: parsed.amount !== undefined ? String(parsed.amount) : f.amount,
         vendor: parsed.vendor ?? f.vendor,
       }));
     } catch (err: any) {
@@ -216,7 +225,7 @@ function NewTransactionPage() {
                   step="0.01"
                   className="w-full border rounded-md h-10 px-3"
                   value={form.amount}
-                  onChange={(e) => onChange({ amount: Number(e.target.value) })}
+                  onChange={(e) => onChange({ amount: e.target.value })}
                   placeholder="0.00"
                 />
               </div>
