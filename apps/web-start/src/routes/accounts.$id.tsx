@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import { ArrowLeft, CreditCard, ListOrdered } from 'lucide-react';
