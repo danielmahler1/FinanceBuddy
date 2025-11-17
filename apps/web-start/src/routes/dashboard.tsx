@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import {
@@ -72,24 +73,58 @@ function Dashboard() {
   const transactionsQ = useApiQuery<Array<Transaction>>(['transactions'], '/transactions');
   const allTransactions = transactionsQ.data ?? [];
 
-  // Get recent transactions (last 5)
-  const recentTransactions = [...allTransactions]
+  // Month filter state (YYYY-MM)
+  const [selectedMonthKey, setSelectedMonthKey] = React.useState<string>(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  });
+
+  const monthOptions = React.useMemo(() => {
+    const now = new Date();
+    const options: Array<{ key: string; label: string }> = [];
+
+    // Last 12 months including current month
+    const monthsBack = 12;
+    for (let i = 0; i < monthsBack; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const key = `${y}-${m}`;
+      const label = d.toLocaleString(undefined, {
+        month: 'long',
+        year: 'numeric',
+      });
+      options.push({ key, label });
+    }
+
+    return options;
+  }, []);
+
+  const selectedMonthLabel =
+    monthOptions.find((m) => m.key === selectedMonthKey)?.label ?? 'Selected month';
+
+  // Transactions for selected month
+  const monthlyTransactions = allTransactions.filter((t) => {
+    const d = new Date(t.createdAt);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const key = `${y}-${m}`;
+    return key === selectedMonthKey;
+  });
+
+  // Get recent transactions (last 5) for selected month
+  const recentTransactions = [...monthlyTransactions]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
-  // Calculate income and expenses from transactions
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const thisMonthTransactions = allTransactions.filter(
-    (t) => new Date(t.createdAt) >= startOfMonth
-  );
-
-  const monthlyIncome = thisMonthTransactions
+  const monthlyIncome = monthlyTransactions
     .filter((t) => t.amount > 0)
     .reduce((sum, t) => sum + t.amount, 0);
 
   const monthlyExpenses = Math.abs(
-    thisMonthTransactions
+    monthlyTransactions
       .filter((t) => t.amount < 0)
       .reduce((sum, t) => sum + t.amount, 0)
   );
@@ -192,6 +227,27 @@ function Dashboard() {
             </p>
           </div>
 
+          {/* Month Selector */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Overview by month
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Month</span>
+              <select
+                className="border rounded-md h-9 px-3 text-sm bg-white"
+                value={selectedMonthKey}
+                onChange={(e) => setSelectedMonthKey(e.target.value)}
+              >
+                {monthOptions.map((opt) => (
+                  <option key={opt.key} value={opt.key}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* Stats Overview */}
           <div className="grid md:grid-cols-4 gap-4">
             <Card>
@@ -224,7 +280,7 @@ function Dashboard() {
                     ? 'Loading…'
                     : `$${monthlyIncome.toFixed(2)}`}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">This month</p>
+                <p className="text-xs text-gray-500 mt-1">{selectedMonthLabel}</p>
               </CardContent>
             </Card>
 
@@ -241,7 +297,7 @@ function Dashboard() {
                     ? 'Loading…'
                     : `$${monthlyExpenses.toFixed(2)}`}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">This month</p>
+                <p className="text-xs text-gray-500 mt-1">{selectedMonthLabel}</p>
               </CardContent>
             </Card>
 
