@@ -5,6 +5,7 @@ import { ArrowLeft, CreditCard, ListOrdered } from 'lucide-react';
 import { useApiQuery } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { TransactionActions } from '@/components/TransactionActions';
 
 type Transaction = {
   id: string;
@@ -87,15 +88,18 @@ function AccountTransactionsPage() {
             <CardContent>
               <div className="divide-y">
                 {txs.map((t) => (
-                  <div key={t.id} className="flex items-center justify-between py-3">
-                    <div>
+                  <div key={t.id} className="flex items-start justify-between py-3 gap-4">
+                    <div className="flex-1">
                       <div className="font-medium text-gray-900">{t.vendor}</div>
                       <div className="text-sm text-gray-500">
                         {new Date(t.createdAt).toLocaleString()} · {t.type}
                       </div>
                     </div>
-                    <div className={`font-semibold ${t.amount >= 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                      {t.amount >= 0 ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
+                    <div className="flex items-center gap-3">
+                      <div className={`font-semibold ${t.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {t.amount >= 0 ? '+' : '-'}${Math.abs(t.amount).toFixed(2)}
+                      </div>
+                      <TransactionActions transaction={t} />
                     </div>
                   </div>
                 ))}
