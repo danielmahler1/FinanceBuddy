@@ -120,12 +120,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         include: { user: true },
       });
     } else {
-      // 3) Update user profile fields opportunistically
+      // 3) Update user profile fields opportunistically (only if they're empty)
       const updates: Record<string, string> = {};
       const email = profile?.email ?? payload.email;
       if (email) updates.email = email;
-      if (profile?.given_name) updates.firstName = profile.given_name;
-      if (profile?.family_name) updates.lastName = profile.family_name;
+      // Only update firstName/lastName if they're currently empty in the database
+      if (profile?.given_name && !auth.user.firstName) updates.firstName = profile.given_name;
+      if (profile?.family_name && !auth.user.lastName) updates.lastName = profile.family_name;
       if (Object.keys(updates).length) {
         await this.prisma.user.update({ where: { id: auth.userId }, data: updates });
       }
