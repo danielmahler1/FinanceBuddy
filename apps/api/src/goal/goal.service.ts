@@ -32,15 +32,30 @@ export class GoalService {
 
   async create(createGoalDto: CreateGoalDto) {
     return this.prisma.goal.create({
-      data: createGoalDto,
+      data: {
+        userId: createGoalDto.userId,
+        name: createGoalDto.name,
+        description: createGoalDto.description,
+        targetAmount: createGoalDto.targetAmount,
+        currentAmount: createGoalDto.currentAmount ?? 0,
+        status: createGoalDto.status ?? 'active',
+        category: createGoalDto.category,
+        priority: createGoalDto.priority,
+        targetDate: createGoalDto.targetDate ? new Date(createGoalDto.targetDate) : null,
+      },
     });
   }
 
   async update(id: string, updateGoalDto: UpdateGoalDto, userId: string) {
     await this.findOne(id, userId); // Check if goal exists and user owns it
+    const data: any = { ...updateGoalDto };
+    // Convert targetDate string to Date if provided
+    if (updateGoalDto.targetDate) {
+      data.targetDate = new Date(updateGoalDto.targetDate);
+    }
     return this.prisma.goal.update({
       where: { id },
-      data: updateGoalDto,
+      data,
     });
   }
 
