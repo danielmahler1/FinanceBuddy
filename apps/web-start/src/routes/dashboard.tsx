@@ -81,35 +81,26 @@ function Dashboard() {
     return `${y}-${m}`;
   });
 
-  const monthOptions = React.useMemo(
-    () => {
-      const keys = new Set<string>();
-      const now = new Date();
-      const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      keys.add(currentKey);
-      for (const t of allTransactions) {
-        const d = new Date(t.createdAt);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        keys.add(`${y}-${m}`);
-      }
-      return Array.from(keys)
-        .sort()
-        .reverse()
-        .map((key) => {
-          const [yearStr, monthStr] = key.split('-');
-          const date = new Date(Number(yearStr), Number(monthStr) - 1, 1);
-          return {
-            key,
-            label: date.toLocaleString(undefined, {
-              month: 'long',
-              year: 'numeric',
-            }),
-          };
-        });
-    },
-    [allTransactions],
-  );
+  const monthOptions = React.useMemo(() => {
+    const now = new Date();
+    const options: Array<{ key: string; label: string }> = [];
+
+    // Last 12 months including current month
+    const monthsBack = 12;
+    for (let i = 0; i < monthsBack; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const key = `${y}-${m}`;
+      const label = d.toLocaleString(undefined, {
+        month: 'long',
+        year: 'numeric',
+      });
+      options.push({ key, label });
+    }
+
+    return options;
+  }, []);
 
   const selectedMonthLabel =
     monthOptions.find((m) => m.key === selectedMonthKey)?.label ?? 'Selected month';
