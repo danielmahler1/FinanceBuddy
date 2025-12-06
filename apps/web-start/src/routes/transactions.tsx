@@ -241,8 +241,8 @@ function NewTransactionPage() {
                 />
               </div>
 
-              <div className="md:col-span-2 flex flex-wrap gap-3 mt-2">
-                <label className="relative inline-flex items-center justify-center h-10">
+              <div className="md:col-span-2 flex flex-wrap gap-2 mt-2">
+                <label className="relative inline-flex items-center justify-center">
                   <input
                     type="file"
                     accept="image/*"
@@ -252,23 +252,16 @@ function NewTransactionPage() {
                       if (file) void handleFile(file);
                     }}
                   />
-                  <span className="border rounded-md px-4 py-2 inline-flex items-center gap-2 cursor-pointer">
+                  <span className="border rounded-md px-4 py-2 inline-flex items-center gap-2 cursor-pointer h-10">
                     <ImageIcon className="w-4 h-4" /> {ocrLoading ? 'Scanning…' : 'Scan Receipt'}
                   </span>
                 </label>
-                <Button type="submit" disabled={createTx.isPending} className="gap-2">
-                  <Save className="w-4 h-4" /> {createTx.isPending ? 'Saving…' : 'Save Transaction'}
+                <Button type="button" variant="outline" className="gap-2 h-10" onClick={camOpen ? closeCamera : openCamera}>
+                  <Camera className="w-4 h-4" /> {camOpen ? 'Close Camera' : 'Use Camera'}
                 </Button>
               </div>
 
-              {camError && (
-                <div className="md:col-span-2 text-sm text-red-600">{camError}</div>
-              )}
-
               <div className="md:col-span-2 space-y-3">
-                <Button type="button" variant="outline" className="gap-2" onClick={camOpen ? closeCamera : openCamera}>
-                  <Camera className="w-4 h-4" /> {camOpen ? 'Close Camera' : 'Use Camera'}
-                </Button>
                 {camOpen && (
                   <>
                     <video ref={videoRef} playsInline className="w-full max-h-80 rounded-md border" />
@@ -282,6 +275,16 @@ function NewTransactionPage() {
                     </div>
                   </>
                 )}
+              </div>
+
+              {camError && (
+                <div className="md:col-span-2 text-sm text-red-600">{camError}</div>
+              )}
+
+              <div className="md:col-span-2 flex flex-wrap gap-3 mt-2">
+                <Button type="submit" disabled={createTx.isPending} className="gap-2">
+                  <Save className="w-4 h-4" /> {createTx.isPending ? 'Saving…' : 'Save Transaction'}
+                </Button>
               </div>
 
               {(ocrError || (createTx.error as any)?.message) && (
