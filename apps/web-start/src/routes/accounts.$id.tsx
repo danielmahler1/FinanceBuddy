@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import { ArrowLeft, CreditCard, ListOrdered } from 'lucide-react';
@@ -63,7 +62,7 @@ function AccountTransactionsPage() {
             <CardHeader>
               <CardTitle>Failed to load</CardTitle>
               <CardDescription>
-                {(txQ.error as Error).message ?? 'Unable to fetch transactions.'}
+                {txQ.error.message || 'Unable to fetch transactions.'}
               </CardDescription>
             </CardHeader>
           </Card>

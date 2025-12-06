@@ -73,37 +73,45 @@ function Dashboard() {
   const transactionsQ = useApiQuery<Array<Transaction>>(['transactions'], '/transactions');
   const allTransactions = transactionsQ.data ?? [];
 
-  // Month filter state (YYYY-MM)
-  const [selectedMonthKey, setSelectedMonthKey] = React.useState<string>(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    return `${y}-${m}`;
+  // Year and Month filter state
+  const [selectedYear, setSelectedYear] = React.useState<number>(() => {
+    return new Date().getFullYear();
   });
 
-  const monthOptions = React.useMemo(() => {
-    const now = new Date();
-    const options: Array<{ key: string; label: string }> = [];
+  const [selectedMonth, setSelectedMonth] = React.useState<number>(() => {
+    return new Date().getMonth() + 1; // 1-12
+  });
 
-    // Last 12 months including current month
-    const monthsBack = 12;
-    for (let i = 0; i < monthsBack; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const key = `${y}-${m}`;
-      const label = d.toLocaleString(undefined, {
-        month: 'long',
-        year: 'numeric',
-      });
-      options.push({ key, label });
+  const selectedMonthKey = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+
+  // Generate year options (last 5 years and next year)
+  const yearOptions = React.useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const options: Array<number> = [];
+    for (let i = 5; i >= -1; i--) {
+      options.push(currentYear - i);
     }
-
     return options;
   }, []);
 
-  const selectedMonthLabel =
-    monthOptions.find((m) => m.key === selectedMonthKey)?.label ?? 'Selected month';
+  // Generate month options (1-12)
+  const monthOptions = React.useMemo(() => {
+    const options: Array<{ value: number; label: string }> = [];
+    for (let m = 1; m <= 12; m++) {
+      const date = new Date(selectedYear, m - 1, 1);
+      const label = date.toLocaleString(undefined, { month: 'long' });
+      options.push({ value: m, label });
+    }
+    return options;
+  }, [selectedYear]);
+
+  const selectedMonthLabel = React.useMemo(() => {
+    const date = new Date(selectedYear, selectedMonth - 1, 1);
+    return date.toLocaleString(undefined, {
+      month: 'long',
+      year: 'numeric',
+    });
+  }, [selectedYear, selectedMonth]);
 
   // Transactions for selected month
   const monthlyTransactions = allTransactions.filter((t) => {
@@ -227,24 +235,40 @@ function Dashboard() {
             </p>
           </div>
 
-          {/* Month Selector */}
+          {/* Year and Month Selector */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <h2 className="text-lg font-semibold text-gray-900">
               Overview by month
             </h2>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Month</span>
-              <select
-                className="border rounded-md h-9 px-3 text-sm bg-white"
-                value={selectedMonthKey}
-                onChange={(e) => setSelectedMonthKey(e.target.value)}
-              >
-                {monthOptions.map((opt) => (
-                  <option key={opt.key} value={opt.key}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Year</span>
+                <select
+                  className="border rounded-md h-9 px-3 text-sm bg-white"
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                >
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Month</span>
+                <select
+                  className="border rounded-md h-9 px-3 text-sm bg-white"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                >
+                  {monthOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
