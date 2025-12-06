@@ -59,15 +59,19 @@ model Account {
 }
 
 model Goal {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @db.Uuid
-  user          User     @relation(fields: [userId], references: [id])
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  user          User      @relation(fields: [userId], references: [id])
   name          String
+  description   String?
   targetAmount  Float
   currentAmount Float
   status        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  category      String?
+  priority      String?
+  targetDate    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Transaction {

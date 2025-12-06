@@ -45,7 +45,7 @@ type AccountSummary = { totals: Array<{ currency: string; total: number }> };
 
 function Dashboard() {
   const { user, isAuthenticated, isLoading, logout } = useAuth0();
-  const { showLoading: userLoading, error: userError } = useCurrentUser();
+  const { data: dbUser, showLoading: userLoading, error: userError } = useCurrentUser();
 
   // Fetch account summary
   const summaryQ = useApiQuery<AccountSummary>(
@@ -228,7 +228,7 @@ function Dashboard() {
           {/* Welcome Section */}
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Welcome back, {user?.name?.split(' ')[0] || 'there'}!
+              Welcome back, {dbUser?.name?.split(' ')[0] || user?.name?.split(' ')[0] || 'there'}!
             </h1>
             <p className="text-gray-600 mt-1">
               Here's an overview of your financial health
@@ -411,7 +411,15 @@ function Dashboard() {
                 {goalsQ.showLoading ? (
                   <div className="text-center text-gray-500">Loading goals...</div>
                 ) : goals.length === 0 ? (
-                  <div className="text-center text-gray-500">No goals yet</div>
+                  <div className="text-center text-gray-500">
+                    <p className="mb-4">No goals yet</p>
+                    <Link to="/goals">
+                      <Button size="sm" className="gap-2">
+                        <Target className="w-4 h-4" />
+                        Create Your First Goal
+                      </Button>
+                    </Link>
+                  </div>
                 ) : (
                   <div className="space-y-4">
                     {goals.map((goal, i) => {
@@ -421,28 +429,36 @@ function Dashboard() {
                       const colors = ['bg-blue-600', 'bg-purple-600', 'bg-green-600', 'bg-orange-600', 'bg-pink-600'];
                       const color = colors[i % colors.length];
                       return (
-                        <div key={goal.id} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-gray-900">
-                                {goal.name}
+                        <Link key={goal.id} to="/goals">
+                          <div className="space-y-2 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-gray-900">
+                                  {goal.name}
+                                </p>
+                                <Badge variant="secondary">{percentage}%</Badge>
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                ${goal.currentAmount.toLocaleString()} / $
+                                {goal.targetAmount.toLocaleString()}
                               </p>
-                              <Badge variant="secondary">{percentage}%</Badge>
                             </div>
-                            <p className="text-sm text-gray-600">
-                              ${goal.currentAmount.toLocaleString()} / $
-                              {goal.targetAmount.toLocaleString()}
-                            </p>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`${color} h-2 rounded-full transition-all`}
+                                style={{ width: `${Math.min(percentage, 100)}%` }}
+                              ></div>
+                            </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`${color} h-2 rounded-full transition-all`}
-                              style={{ width: `${Math.min(percentage, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        </Link>
                       );
                     })}
+                    <Link to="/goals">
+                      <Button variant="outline" size="sm" className="w-full mt-4 gap-2">
+                        <Target className="w-4 h-4" />
+                        View All Goals
+                      </Button>
+                    </Link>
                   </div>
                 )}
               </CardContent>
@@ -465,9 +481,11 @@ function Dashboard() {
                     <span className="text-sm">Add Transaction</span>
                   </Link>
                 </Button>
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
-                  <Target className="w-5 h-5" />
-                  <span className="text-sm">Set Goal</span>
+                <Button asChild variant="outline" className="h-20 flex flex-col gap-2">
+                  <Link to="/goals">
+                    <Target className="w-5 h-5" />
+                    <span className="text-sm">Set Goal</span>
+                  </Link>
                 </Button>
                 <Button asChild variant="outline" className="h-20 flex flex-col gap-2">
                   <Link to="/accounts">

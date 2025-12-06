@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
@@ -24,6 +25,11 @@ const TransactionsRoute = TransactionsRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoalsRoute = GoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/goals': typeof GoalsRoute
   '/profile': typeof ProfileRoute
   '/transactions': typeof TransactionsRoute
   '/accounts/$id': typeof AccountsIdRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/goals': typeof GoalsRoute
   '/profile': typeof ProfileRoute
   '/transactions': typeof TransactionsRoute
   '/accounts/$id': typeof AccountsIdRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/goals': typeof GoalsRoute
   '/profile': typeof ProfileRoute
   '/transactions': typeof TransactionsRoute
   '/accounts/$id': typeof AccountsIdRoute
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/dashboard'
+    | '/goals'
     | '/profile'
     | '/transactions'
     | '/accounts/$id'
@@ -86,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/dashboard'
+    | '/goals'
     | '/profile'
     | '/transactions'
     | '/accounts/$id'
@@ -94,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/dashboard'
+    | '/goals'
     | '/profile'
     | '/transactions'
     | '/accounts/$id'
@@ -103,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRoute: typeof AccountsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  GoalsRoute: typeof GoalsRoute
   ProfileRoute: typeof ProfileRoute
   TransactionsRoute: typeof TransactionsRoute
 }
@@ -121,6 +134,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/goals': {
+      id: '/goals'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof GoalsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -170,6 +190,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  GoalsRoute: GoalsRoute,
   ProfileRoute: ProfileRoute,
   TransactionsRoute: TransactionsRoute,
 }

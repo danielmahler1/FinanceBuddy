@@ -83,6 +83,8 @@ function ProfileSettings() {
 
   // Mutation for updating user profile
   type UpdateUserPayload = {
+    firstName?: string;
+    lastName?: string;
     name?: string;
     phone?: string;
     dateOfBirth?: string;
@@ -162,6 +164,8 @@ function ProfileSettings() {
 
     try {
       await updateUserMutation.mutateAsync({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         name: `${formData.firstName} ${formData.lastName}`,
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth,
