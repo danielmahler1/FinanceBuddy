@@ -1,5 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
 
 datasource db {
   provider  = "postgresql"
@@ -7,23 +9,17 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/client"
-}
-
 model User {
-  id          String   @id @default(uuid()) @db.Uuid
-  email       String   @unique
-  firstName   String?
-  lastName    String?
-  name        String?
-  phone       String?
-  dateOfBirth String?
-  currency    String?  @default("USD")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id              String           @id @default(uuid()) @db.Uuid
+  email           String           @unique
+  firstName       String?
+  lastName        String?
+  name            String?
+  phone           String?
+  dateOfBirth     String?
+  currency        String?          @default("USD")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   accounts        Account[]
   goals           Goal[]
   authentications Authentication[]
@@ -31,12 +27,11 @@ model User {
 
 model Authentication {
   id         String   @id @default(uuid()) @map("id")
-  userId     String   @db.Uuid @map("user_id")
+  userId     String   @map("user_id") @db.Uuid
   provider   String   @map("provider")
   providerId String   @map("provider_user_id")
   createdAt  DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerId])
   @@index([userId])
@@ -44,45 +39,44 @@ model Authentication {
 }
 
 model Account {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
-  accountType String
-  value       Float
-  currency    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  transactions     Transaction[]
-  recurringCharges RecurringCharge[]
+  id               String            @id @default(uuid()) @db.Uuid
+  userId           String            @db.Uuid
+  accountType      String
+  value            Float
+  currency         String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [userId], references: [id])
   incomes          Income[]
+  recurringCharges RecurringCharge[]
+  transactions     Transaction[]
 }
 
 model Goal {
   id            String    @id @default(uuid()) @db.Uuid
   userId        String    @db.Uuid
-  user          User      @relation(fields: [userId], references: [id])
   name          String
-  description   String?
   targetAmount  Float
   currentAmount Float
   status        String
-  category      String?
-  priority      String?
-  targetDate    DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  category      String?
+  description   String?
+  priority      String?
+  targetDate    DateTime?
+  user          User      @relation(fields: [userId], references: [id])
 }
 
 model Transaction {
   id        String   @id @default(uuid()) @db.Uuid
   accountId String   @db.Uuid
-  account   Account  @relation(fields: [accountId], references: [id])
   type      String
   amount    Float
   vendor    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  account   Account  @relation(fields: [accountId], references: [id])
 
   @@index([accountId, createdAt])
 }
@@ -90,7 +84,6 @@ model Transaction {
 model RecurringCharge {
   id        String    @id @default(uuid()) @db.Uuid
   accountId String    @db.Uuid
-  account   Account   @relation(fields: [accountId], references: [id])
   type      String
   amount    Float
   interval  String
@@ -98,15 +91,16 @@ model RecurringCharge {
   status    Boolean
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  account   Account   @relation(fields: [accountId], references: [id])
 }
 
 model Income {
   id        String    @id @default(uuid()) @db.Uuid
   accountId String    @db.Uuid
-  account   Account   @relation(fields: [accountId], references: [id])
   amount    Float
   interval  String?
   endDate   DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  account   Account   @relation(fields: [accountId], references: [id])
 }

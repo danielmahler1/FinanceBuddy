@@ -10,6 +10,7 @@ import { GoalModule } from './goal/goal.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { RecurringChargeModule } from './recurring-charge/recurring-charge.module';
 import { IncomeModule } from './income/income.module';
+import { ReceiptModule } from './receipt/receipt.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { IncomeModule } from './income/income.module';
     TransactionModule,
     RecurringChargeModule,
     IncomeModule,
+    ReceiptModule,
   ],
   controllers: [AppController],
   providers: [AppService],
