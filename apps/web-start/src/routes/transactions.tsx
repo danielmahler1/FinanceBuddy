@@ -1,11 +1,14 @@
 ﻿import React from 'react';
 import { Link, Navigate, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
-import Tesseract from 'tesseract.js';
 import { ArrowLeft, Camera, CreditCard, Image as ImageIcon, Save } from 'lucide-react';
+import type { ParsedReceiptData } from '@/components/receipt';
 import { useApiMutation, useApiQuery } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ReceiptReview } from '@/components/receipt';
+
 
 type Account = {
   id: string;
@@ -31,7 +34,7 @@ export const Route = createFileRoute('/transactions')({
 });
 
 function NewTransactionPage() {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   const accountsQ = useApiQuery<Array<Account>>(['accounts', 'me'], '/accounts/me');
   const createTx = useApiMutation<CreateTx, unknown>({
@@ -48,6 +51,9 @@ function NewTransactionPage() {
   });
   const [ocrLoading, setOcrLoading] = React.useState(false);
   const [ocrError, setOcrError] = React.useState<string | null>(null);
+  const [scanMethod, setScanMethod] = React.useState<'gemini' | 'tesseract' | null>(null);
+  const [parsedReceipt, setParsedReceipt] = React.useState<ParsedReceiptData | null>(null);
+  const [showReview, setShowReview] = React.useState(false);
   const [camOpen, setCamOpen] = React.useState(false);
   const [camError, setCamError] = React.useState<string | null>(null);
   const videoRef = React.useRef<VideoEl | null>(null);
@@ -96,20 +102,84 @@ function NewTransactionPage() {
       setOcrError(err?.message ?? 'Failed to save');
     }
   }
+  async function handleFileWithGemini(file: File): Promise<ParsedReceiptData | null> {
+    const formData = new FormData();
+    formData.append('receipt', file);
+
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    const audience = import.meta.env.VITE_AUTH0_AUDIENCE as string;
+
+    let token: string | undefined;
+    try {
+      token = await getAccessTokenSilently({
+        authorizationParams: { audience },
+      });
+    } catch (error) {
+      console.error('Failed to get access token:', error);
+      throw new Error('Authentication failed. Please try again.');
+    }
+
+    const response = await fetch(`${backendUrl}/receipts/scan`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to scan receipt');
+    }
+
+    return response.json();
+  }
+
+  async function handleFileWithTesseract(file: File): Promise<ParsedReceiptData> {
+    // Lazy load Tesseract.js only when needed to avoid SSR issues
+    const Tesseract = await import('tesseract.js');
+    const { data } = await Tesseract.recognize(file, 'eng');
+    const text = data.text || '';
+    const parsed = parseReceipt(text);
+
+    return {
+      vendor: parsed.vendor || null,
+      date: null,
+      total: parsed.amount !== undefined ? parsed.amount : null,
+      subtotal: null,
+      tax: null,
+      tip: null,
+      items: null,
+      paymentMethod: null,
+      confidence: parsed.amount !== undefined && parsed.vendor ? 'medium' : 'low',
+    };
+  }
+
   async function handleFile(file: File) {
     setOcrError(null);
     setOcrLoading(true);
+    setScanMethod(null);
+
     try {
-      const { data } = await Tesseract.recognize(file, 'eng');
-      const text = data.text || '';
-      const parsed = parseReceipt(text);
-      setForm((f) => ({
-        ...f,
-        amount: parsed.amount !== undefined ? String(parsed.amount) : f.amount,
-        vendor: parsed.vendor ?? f.vendor,
-      }));
+      // Try Gemini first
+      try {
+        setScanMethod('gemini');
+        const geminiResult = await handleFileWithGemini(file);
+        if (geminiResult) {
+          setParsedReceipt(geminiResult);
+          setShowReview(true);
+          return;
+        }
+      } catch (geminiError: any) {
+        console.warn('Gemini parsing failed, falling back to Tesseract:', geminiError.message);
+      }
+
+      // Fallback to Tesseract
+      setScanMethod('tesseract');
+      const tesseractResult = await handleFileWithTesseract(file);
+      setParsedReceipt(tesseractResult);
+      setShowReview(true);
     } catch (err: any) {
-      setOcrError('Could not read receipt. Try clearer image.');
+      setOcrError('Could not read receipt. Try a clearer image.');
+      setScanMethod(null);
     } finally {
       setOcrLoading(false);
     }
@@ -164,6 +234,64 @@ function NewTransactionPage() {
     const file = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
     await handleFile(file);
     closeCamera();
+  }
+
+  function handleReviewAccept(data: ParsedReceiptData) {
+    setForm((f) => ({
+      ...f,
+      amount: data.total !== null ? String(data.total) : f.amount,
+      vendor: data.vendor || f.vendor,
+      type: data.total && data.total < 0 ? 'expense' : f.type,
+    }));
+    setShowReview(false);
+    setParsedReceipt(null);
+  }
+
+  function handleReviewReject() {
+    setShowReview(false);
+    setParsedReceipt(null);
+    setOcrError('Receipt rejected. Please try scanning again.');
+  }
+
+  function handleReviewEdit(field: keyof ParsedReceiptData, value: any) {
+    if (parsedReceipt) {
+      setParsedReceipt({ ...parsedReceipt, [field]: value });
+    }
+  }
+
+  if (showReview && parsedReceipt) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              Review Scanned Receipt
+            </h1>
+            <Button asChild variant="outline" className="gap-2">
+              <Link to="/dashboard">
+                <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+              </Link>
+            </Button>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-8">
+          {scanMethod && (
+            <div className="text-center mb-4">
+              <Badge variant="secondary">
+                Scanned with: {scanMethod === 'gemini' ? 'AI (Gemini)' : 'OCR (Tesseract)'}
+              </Badge>
+            </div>
+          )}
+          <ReceiptReview
+            parsedData={parsedReceipt}
+            onAccept={handleReviewAccept}
+            onReject={handleReviewReject}
+            onEdit={handleReviewEdit}
+          />
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -253,7 +381,14 @@ function NewTransactionPage() {
                     }}
                   />
                   <span className="border rounded-md px-4 py-2 inline-flex items-center gap-2 cursor-pointer h-10">
-                    <ImageIcon className="w-4 h-4" /> {ocrLoading ? 'Scanning…' : 'Scan Receipt'}
+                    <ImageIcon className="w-4 h-4" />{' '}
+                    {ocrLoading
+                      ? scanMethod === 'gemini'
+                        ? 'AI Scanning…'
+                        : scanMethod === 'tesseract'
+                          ? 'OCR Scanning…'
+                          : 'Scanning…'
+                      : 'Scan Receipt'}
                   </span>
                 </label>
                 <Button type="button" variant="outline" className="gap-2 h-10" onClick={camOpen ? closeCamera : openCamera}>
