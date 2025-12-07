@@ -6,7 +6,6 @@ import type { ParsedReceiptData } from '@/components/receipt';
 import { useApiMutation, useApiQuery } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { ReceiptReview } from '@/components/receipt';
 
 
@@ -189,17 +188,29 @@ function NewTransactionPage() {
     setCamError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false,
       });
       streamRef.current = stream;
       setCamOpen(true);
-      const v = videoRef.current;
-      if (v) {
-        v.srcObject = stream;
-        await v.play();
-      }
+
+      // Use setTimeout to ensure the video element is rendered before setting srcObject
+      setTimeout(() => {
+        const v = videoRef.current;
+        if (v) {
+          v.srcObject = stream;
+          v.play().catch((err) => {
+            console.error('Error playing video:', err);
+            setCamError('Unable to start video stream.');
+          });
+        }
+      }, 100);
     } catch (e) {
+      console.error('Camera error:', e);
       setCamError('Unable to access camera. Check permissions.');
     }
   }
@@ -216,24 +227,34 @@ function NewTransactionPage() {
   async function captureFromCamera() {
     const v = videoRef.current;
     if (!v) return;
+
+    // Close camera immediately and start scanning
+    closeCamera();
+    setOcrLoading(true);
+    setOcrError(null);
+
     const canvas = document.createElement('canvas');
     const w = v.videoWidth || 1280;
     const h = v.videoHeight || 720;
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      setOcrLoading(false);
+      setOcrError('Could not capture image. Please try again.');
+      return;
+    }
     ctx.drawImage(v, 0, 0, w, h);
     const blob: Blob | null = await new Promise((resolve) =>
       canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.95),
     );
     if (!blob) {
+      setOcrLoading(false);
       setCamError('Could not capture image. Please try again.');
       return;
     }
     const file = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
     await handleFile(file);
-    closeCamera();
   }
 
   function handleReviewAccept(data: ParsedReceiptData) {
@@ -276,13 +297,6 @@ function NewTransactionPage() {
           </div>
         </header>
         <main className="container mx-auto px-4 py-8">
-          {scanMethod && (
-            <div className="text-center mb-4">
-              <Badge variant="secondary">
-                Scanned with: {scanMethod === 'gemini' ? 'AI (Gemini)' : 'OCR (Tesseract)'}
-              </Badge>
-            </div>
-          )}
           <ReceiptReview
             parsedData={parsedReceipt}
             onAccept={handleReviewAccept}
@@ -399,7 +413,13 @@ function NewTransactionPage() {
               <div className="md:col-span-2 space-y-3">
                 {camOpen && (
                   <>
-                    <video ref={videoRef} playsInline className="w-full max-h-80 rounded-md border" />
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full max-h-80 rounded-lg border object-cover"
+                    />
                     <div className="flex gap-2">
                       <Button type="button" onClick={captureFromCamera} className="gap-2">
                         <Camera className="w-4 h-4" /> Capture & Scan
@@ -409,6 +429,17 @@ function NewTransactionPage() {
                       </Button>
                     </div>
                   </>
+                )}
+                {ocrLoading && !camOpen && (
+                  <div className="w-full max-h-80 rounded-lg border bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center p-8 space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                    <div className="text-center">
+                      <p className="text-lg font-medium text-gray-900">
+                        {scanMethod === 'gemini' ? 'AI Scanning Receipt...' : scanMethod === 'tesseract' ? 'OCR Scanning Receipt...' : 'Scanning Receipt...'}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">Please wait while we process your image</p>
+                    </div>
+                  </div>
                 )}
               </div>
 
