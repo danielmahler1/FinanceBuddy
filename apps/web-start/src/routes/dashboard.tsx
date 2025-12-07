@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useApiQuery, useCurrentUser } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TransactionActions } from '@/components/TransactionActions';
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
@@ -371,9 +372,9 @@ function Dashboard() {
                     {recentTransactions.map((transaction) => (
                       <div
                         key={transaction.id}
-                        className="flex items-center justify-between border-b pb-3 last:border-0"
+                        className="flex items-start justify-between border-b pb-3 last:border-0"
                       >
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium text-gray-900">
                             {transaction.vendor}
                           </p>
@@ -381,15 +382,18 @@ function Dashboard() {
                             {formatRelativeDate(transaction.createdAt)}
                           </p>
                         </div>
-                        <div
-                          className={`font-semibold ${
-                            transaction.amount > 0
-                              ? 'text-green-600'
-                              : 'text-gray-900'
-                          }`}
-                        >
-                          {transaction.amount > 0 ? '+' : ''}$
-                          {Math.abs(transaction.amount).toFixed(2)}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`font-semibold ${
+                              transaction.amount > 0
+                                ? 'text-green-600'
+                                : 'text-red-600'
+                            }`}
+                          >
+                            {transaction.amount > 0 ? '+' : '-'}$
+                            {Math.abs(transaction.amount).toFixed(2)}
+                          </div>
+                          <TransactionActions transaction={transaction} />
                         </div>
                       </div>
                     ))}
