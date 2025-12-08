@@ -20,8 +20,6 @@ import { Badge } from '@/components/ui/badge';
 import { TransactionActions } from '@/components/TransactionActions';
 import { GoalActions } from '@/components/GoalActions';
 
-const ExpensePieChart = React.lazy(() => import('@/components/ExpensePieChart').then(module => ({ default: module.ExpensePieChart })));
-
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
 });
@@ -385,7 +383,7 @@ function Dashboard() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6">
             {/* Recent Transactions */}
             <Card>
               <CardHeader>
@@ -447,28 +445,6 @@ function Dashboard() {
                 )}
               </CardContent>
             </Card>
-
-            <React.Suspense fallback={
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5" />
-                    Expense Breakdown
-                  </CardTitle>
-                  <CardDescription>Expenses by vendor</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center text-gray-500 py-12">Loading chart...</div>
-                </CardContent>
-              </Card>
-            }>
-              <ExpensePieChart
-                transactions={allTransactions}
-                selectedYear={selectedYear}
-                selectedMonth={selectedMonth}
-                isLoading={transactionsQ.showLoading}
-              />
-            </React.Suspense>
 
             {/* Financial Goals */}
             <Card>
