@@ -42,7 +42,7 @@ function AccountsPage() {
   const [showForm, setShowForm] = React.useState(false);
   const [accountType, setAccountType] = React.useState<'checking' | 'savings' | 'credit'>('checking');
   const [currency, setCurrency] = React.useState<'USD' | 'EUR' | 'GBP'>('USD');
-  const [value, setValue] = React.useState<string>('0');
+  const [value, setValue] = React.useState<string>('');
   const [selected, setSelected] = React.useState<null | {
     id: string;
     accountType: string;
@@ -62,7 +62,7 @@ function AccountsPage() {
       value: parsed,
     });
     setShowForm(false);
-    setValue('0');
+    setValue('');
     setAccountType('checking');
     setCurrency('USD');
   }
@@ -161,6 +161,7 @@ function AccountsPage() {
                     className="w-full border rounded-md h-10 px-3"
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
+                    placeholder="0.00"
                   />
                 </div>
                 <div className="flex flex-wrap gap-2 md:col-span-4 mt-2">
