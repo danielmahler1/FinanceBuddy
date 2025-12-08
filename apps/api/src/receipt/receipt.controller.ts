@@ -34,7 +34,7 @@ export class ReceiptController {
       },
     }),
   )
-  async scanReceipt(@UploadedFile() file: Express.Multer.File) {
+  async scanReceipt(@UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }

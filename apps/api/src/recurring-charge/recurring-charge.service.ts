@@ -81,7 +81,7 @@ export class RecurringChargeService {
 
     const processedTransactions = [];
 
-    for (const charge of charges) {
+    for (const charge of charges as any[]) {
       if (!charge.status) continue; // Skip inactive charges
 
       // Check if charge has ended
@@ -206,7 +206,7 @@ export class RecurringChargeService {
           where: { id: charge.id },
           data: {
             lastProcessedDate: today,
-          },
+          } as any,
         });
       }
     }

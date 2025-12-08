@@ -18,6 +18,8 @@ import { useApiMutation, useApiQuery, useCurrentUser } from '@/integrations/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TransactionActions } from '@/components/TransactionActions';
+import { GoalActions } from '@/components/GoalActions';
+import { ExpensePieChart } from '@/components/ExpensePieChart';
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
@@ -391,7 +393,7 @@ function Dashboard() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Recent Transactions */}
             <Card>
               <CardHeader>
@@ -454,6 +456,13 @@ function Dashboard() {
               </CardContent>
             </Card>
 
+            <ExpensePieChart
+              transactions={allTransactions}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              isLoading={transactionsQ.showLoading}
+            />
+
             {/* Financial Goals */}
             <Card>
               <CardHeader>
@@ -477,45 +486,51 @@ function Dashboard() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {goals.map((goal, i) => {
-                      const percentage = Math.round(
-                        (goal.currentAmount / goal.targetAmount) * 100
-                      );
-                      const colors = ['bg-blue-600', 'bg-purple-600', 'bg-green-600', 'bg-orange-600', 'bg-pink-600'];
-                      const color = colors[i % colors.length];
-                      return (
-                        <Link key={goal.id} to="/goals">
-                          <div className="space-y-2 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                  <>
+                    <div className="space-y-4">
+                      {goals.map((goal, i) => {
+                        const percentage = Math.round(
+                          (goal.currentAmount / goal.targetAmount) * 100
+                        );
+                        const colors = ['bg-blue-600', 'bg-purple-600', 'bg-green-600', 'bg-orange-600', 'bg-pink-600'];
+                        const color = colors[i % colors.length];
+                        return (
+                          <div
+                            key={goal.id}
+                            className="flex items-start justify-between border-b pb-3 last:border-0"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
                                 <p className="font-medium text-gray-900">
                                   {goal.name}
                                 </p>
                                 <Badge variant="secondary">{percentage}%</Badge>
                               </div>
-                              <p className="text-sm text-gray-600">
+                              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                <div
+                                  className={`${color} h-2 rounded-full transition-all`}
+                                  style={{ width: `${Math.min(percentage, 100)}%` }}
+                                ></div>
+                              </div>
+                              <p className="text-sm text-gray-500">
                                 ${goal.currentAmount.toLocaleString()} / $
                                 {goal.targetAmount.toLocaleString()}
                               </p>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className={`${color} h-2 rounded-full transition-all`}
-                                style={{ width: `${Math.min(percentage, 100)}%` }}
-                              ></div>
+                            <div className="flex items-center gap-3">
+                              <GoalActions goal={goal} />
                             </div>
                           </div>
-                        </Link>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                     <Link to="/goals">
                       <Button variant="outline" size="sm" className="w-full mt-4 gap-2">
                         <Target className="w-4 h-4" />
                         View All Goals
                       </Button>
                     </Link>
-                  </div>
+                  </>
                 )}
               </CardContent>
             </Card>
