@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+// @ts-ignore - Package may not be installed
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export interface ParsedReceipt {

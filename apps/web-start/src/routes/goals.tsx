@@ -44,13 +44,13 @@ type Goal = {
 };
 
 const GOAL_CATEGORIES = [
-  { value: 'car', label: 'Car', icon: '🚗' },
-  { value: 'house', label: 'House', icon: '🏠' },
-  { value: 'vacation', label: 'Vacation', icon: '✈️' },
-  { value: 'education', label: 'Education', icon: '🎓' },
-  { value: 'emergency', label: 'Emergency Fund', icon: '💰' },
-  { value: 'wedding', label: 'Wedding', icon: '💍' },
-  { value: 'other', label: 'Other', icon: '🎯' },
+  { value: 'car', label: 'Car' },
+  { value: 'house', label: 'House' },
+  { value: 'vacation', label: 'Vacation' },
+  { value: 'education', label: 'Education' },
+  { value: 'emergency', label: 'Emergency Fund' },
+  { value: 'wedding', label: 'Wedding' },
+  { value: 'other', label: 'Other' },
 ];
 
 const PRIORITY_LEVELS = [
@@ -249,7 +249,6 @@ function GoalsPage() {
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="text-3xl">{category?.icon || '🎯'}</div>
                           <div>
                             <CardTitle className="text-xl">{goal.name}</CardTitle>
                             {goal.description && (
@@ -568,8 +567,7 @@ function GoalFormModal({
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{cat.icon}</div>
-                  <div className="text-xs font-medium">{cat.label}</div>
+                  <div className="text-sm font-medium">{cat.label}</div>
                 </button>
               ))}
             </div>
