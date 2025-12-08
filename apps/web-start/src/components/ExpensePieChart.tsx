@@ -1,7 +1,7 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { TrendingDown } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Transaction = {
   id: string;
@@ -14,7 +14,7 @@ type Transaction = {
 };
 
 interface ExpensePieChartProps {
-  transactions: Transaction[];
+  transactions: Array<Transaction>;
   selectedYear: number;
   selectedMonth: number;
   isLoading?: boolean;
@@ -51,64 +51,72 @@ export function ExpensePieChart({
     return key === selectedMonthKey && t.amount < 0;
   });
 
-  const vendorGroups = monthlyExpenses.reduce((acc, transaction) => {
-    const vendor = transaction.vendor || 'Unknown';
-    const normalized = normalizeVendorName(vendor);
-    
-    if (!acc[normalized]) {
-      acc[normalized] = {
-        normalizedName: normalized,
-        displayName: vendor,
-        total: 0,
-        transactions: [],
-      };
+  const transactionsMap = React.useMemo(() => {
+    return new Map(monthlyExpenses.map(t => [t.id, t]));
+  }, [monthlyExpenses]);
+
+  const vendorGroups = React.useMemo(() => {
+    return monthlyExpenses.reduce((acc, transaction) => {
+      const vendor = transaction.vendor || 'Unknown';
+      const normalized = normalizeVendorName(vendor);
+
+      if (!acc[normalized]) {
+        acc[normalized] = {
+          normalizedName: normalized,
+          displayName: vendor,
+          total: 0,
+          transactionIds: [],
+        };
+      }
+
+      acc[normalized].total += Math.abs(transaction.amount);
+      acc[normalized].transactionIds.push(transaction.id);
+
+      return acc;
+    }, {} as Record<string, {
+      normalizedName: string;
+      displayName: string;
+      total: number;
+      transactionIds: Array<string>;
+    }>);
+  }, [monthlyExpenses]);
+
+  const chartData = React.useMemo(() => {
+    const sortedGroups = Object.values(vendorGroups)
+      .sort((a, b) => b.total - a.total);
+
+    const topGroups = sortedGroups.slice(0, 8);
+    const otherGroups = sortedGroups.slice(8);
+
+    const otherTransactionIds = otherGroups.flatMap(group => group.transactionIds);
+    const otherTotal = otherGroups.reduce((sum, group) => sum + group.total, 0);
+
+    const data = topGroups.map(group => ({
+      name: group.displayName,
+      normalizedName: group.normalizedName,
+      value: group.total,
+      transactionIds: group.transactionIds,
+    }));
+
+    if (otherTotal > 0) {
+      data.push({
+        name: 'Other',
+        normalizedName: 'other',
+        value: otherTotal,
+        transactionIds: otherTransactionIds,
+      });
     }
-    
-    acc[normalized].total += Math.abs(transaction.amount);
-    acc[normalized].transactions.push({
-      ...transaction,
-      originalVendor: vendor,
-    });
-    
-    return acc;
-  }, {} as Record<string, {
-    normalizedName: string;
-    displayName: string;
-    total: number;
-    transactions: Array<Transaction & { originalVendor: string }>;
-  }>);
 
-  const sortedGroups = Object.values(vendorGroups)
-    .sort((a, b) => b.total - a.total);
+    return data;
+  }, [vendorGroups]);
 
-  const topGroups = sortedGroups.slice(0, 8);
-  const otherGroups = sortedGroups.slice(8);
-  
-  const otherTransactions = otherGroups.flatMap(group => group.transactions);
-  const otherTotal = otherGroups.reduce((sum, group) => sum + group.total, 0);
-
-  const chartData = topGroups.map(group => ({
-    name: group.displayName,
-    normalizedName: group.normalizedName,
-    value: group.total,
-    transactions: group.transactions,
-  }));
-
-  if (otherTotal > 0) {
-    chartData.push({
-      name: 'Other',
-      normalizedName: 'other',
-      value: otherTotal,
-      transactions: otherTransactions,
-    });
-  }
-
-  const totalExpenses = chartData.reduce((sum, item) => sum + item.value, 0);
-
-  const dataWithPercentage = chartData.map((item) => ({
-    ...item,
-    percentage: totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0,
-  }));
+  const dataWithPercentage = React.useMemo(() => {
+    const totalExpenses = chartData.reduce((sum, item) => sum + item.value, 0);
+    return chartData.map((item) => ({
+      ...item,
+      percentage: totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0,
+    }));
+  }, [chartData]);
 
   const selectedMonthLabel = React.useMemo(() => {
     const date = new Date(selectedYear, selectedMonth - 1, 1);
@@ -136,8 +144,11 @@ export function ExpensePieChart({
       return null;
     }
 
-    const transactions = data.transactions || [];
-    
+    const transactionIds = data.transactionIds || [];
+    const transactions = transactionIds
+      .map((id: string) => transactionsMap.get(id))
+      .filter((t: Transaction | undefined): t is Transaction => t !== undefined);
+
     return (
       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm z-50">
         <p className="font-semibold text-gray-900 mb-2">{data.name || 'Unknown'}</p>
@@ -148,13 +159,13 @@ export function ExpensePieChart({
           <div className="border-t pt-2">
             <p className="text-xs font-medium text-gray-700 mb-1">Transactions:</p>
             <ul className="space-y-1 max-h-48 overflow-y-auto">
-              {[...transactions]
-                .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                .map((transaction: any, index: number) => (
+              {transactions
+                .sort((a: Transaction, b: Transaction) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((transaction: Transaction, index: number) => (
                   <li key={transaction.id || `txn-${index}`} className="text-xs text-gray-600 flex items-start gap-2">
                     <span className="text-gray-400">•</span>
                     <span className="flex-1">
-                      <span className="font-medium">{transaction.originalVendor || transaction.vendor || 'Unknown'}</span>
+                      <span className="font-medium">{transaction.vendor || 'Unknown'}</span>
                       <span className="text-gray-500 ml-2">
                         ${Math.abs(transaction.amount || 0).toFixed(2)}
                       </span>
@@ -169,7 +180,7 @@ export function ExpensePieChart({
         )}
       </div>
     );
-  }, [formatDate]);
+  }, [formatDate, transactionsMap]);
 
   const CustomLegend = React.useCallback(({ payload }: any) => {
     if (!payload || !payload.length) {
@@ -246,12 +257,12 @@ export function ExpensePieChart({
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ percentage }) => `${percentage.toFixed(1)}%`}
+              label={(props: any) => `${(props.percentage || 0).toFixed(1)}%`}
               outerRadius={80}
               fill="#8884d8"
               dataKey="value"
             >
-              {dataWithPercentage.map((entry, index) => (
+              {dataWithPercentage.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={CHART_COLORS[index % CHART_COLORS.length]}
