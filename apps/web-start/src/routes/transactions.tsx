@@ -25,6 +25,19 @@ type CreateTx = {
 
 type CreateTxForm = Omit<CreateTx, 'amount'> & { amount: string };
 
+type CreateRecurringCharge = {
+  accountId: string;
+  type: string;
+  amount: number;
+  vendor: string;
+  interval: string;
+  dayOfMonth: number;
+  monthOfYear?: number;
+  startDate?: string;
+  endDate?: string;
+  status?: boolean;
+};
+
 // Narrow the video element type to include srcObject explicitly
 type VideoEl = HTMLVideoElement & { srcObject: MediaStream | null };
 
@@ -42,12 +55,24 @@ function NewTransactionPage() {
     invalidateKeys: [['accounts', 'me'], ['transactions'], ['accounts', 'me', 'summary']],
   });
 
+  const createRecurringCharge = useApiMutation<CreateRecurringCharge, unknown>({
+    path: '/recurring-charges',
+    method: 'POST',
+    invalidateKeys: [['recurring-charges']],
+  });
+
   const [form, setForm] = React.useState<CreateTxForm>({
     accountId: '',
     type: 'expense',
     amount: '',
     vendor: '',
   });
+  const [isRecurring, setIsRecurring] = React.useState(false);
+  const [recurringInterval, setRecurringInterval] = React.useState('monthly');
+  const [dayOfMonth, setDayOfMonth] = React.useState('1');
+  const [monthOfYear, setMonthOfYear] = React.useState('1');
+  const [startDate, setStartDate] = React.useState('');
+  const [endDate, setEndDate] = React.useState('');
   const [ocrLoading, setOcrLoading] = React.useState(false);
   const [ocrError, setOcrError] = React.useState<string | null>(null);
   const [scanMethod, setScanMethod] = React.useState<'gemini' | 'tesseract' | null>(null);
@@ -88,14 +113,51 @@ function NewTransactionPage() {
       if (!form.accountId) throw new Error('Please choose an account');
       if (!form.amount || Number.isNaN(Number(form.amount))) throw new Error('Enter an amount');
       const numericAmount = Number(form.amount);
-      const signed =
-        form.type === 'income' ? Math.abs(numericAmount) : -Math.abs(numericAmount);
-      await createTx.mutateAsync({
-        accountId: form.accountId,
-        type: form.type,
-        vendor: form.vendor,
-        amount: signed,
-      });
+
+      if (isRecurring) {
+        // Create recurring charge
+        const roundedAmount = Math.round(numericAmount * 100) / 100; // Round to 2 decimal places
+        const signed =
+          form.type === 'income' ? Math.abs(roundedAmount) : -Math.abs(roundedAmount);
+
+        const chargeData: CreateRecurringCharge = {
+          accountId: form.accountId,
+          type: form.type,
+          amount: signed,
+          vendor: form.vendor,
+          interval: recurringInterval,
+          dayOfMonth: parseInt(dayOfMonth),
+          status: true,
+        };
+
+        // Add monthOfYear for yearly charges
+        if (recurringInterval === 'yearly') {
+          chargeData.monthOfYear = parseInt(monthOfYear);
+        }
+
+        // Include start date if provided (store as midnight UTC)
+        if (startDate && startDate.trim() !== '') {
+          chargeData.startDate = `${startDate}T00:00:00.000Z`;
+        }
+
+        // Only include end date if it has a valid value (store as midnight UTC)
+        if (endDate && endDate.trim() !== '') {
+          chargeData.endDate = `${endDate}T00:00:00.000Z`;
+        }
+
+        await createRecurringCharge.mutateAsync(chargeData);
+      } else {
+        // Create one-time transaction
+        const roundedAmount = Math.round(numericAmount * 100) / 100; // Round to 2 decimal places
+        const signed =
+          form.type === 'income' ? Math.abs(roundedAmount) : -Math.abs(roundedAmount);
+        await createTx.mutateAsync({
+          accountId: form.accountId,
+          type: form.type,
+          vendor: form.vendor,
+          amount: signed,
+        });
+      }
       navigate({ to: '/dashboard' });
     } catch (err: any) {
       setOcrError(err?.message ?? 'Failed to save');
@@ -382,6 +444,106 @@ function NewTransactionPage() {
                   placeholder="e.g., Grocery Store"
                 />
               </div>
+
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={(e) => setIsRecurring(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Make this a recurring charge</span>
+                </label>
+              </div>
+
+              {isRecurring && (
+                <>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-gray-600 mb-1">Recurrence Frequency</label>
+                    <select
+                      className="w-full border rounded-md h-10 px-3"
+                      value={recurringInterval}
+                      onChange={(e) => setRecurringInterval(e.target.value)}
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                  {recurringInterval === 'monthly' && (
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Day of Month (1-31)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        className="w-full border rounded-md h-10 px-3"
+                        value={dayOfMonth}
+                        onChange={(e) => setDayOfMonth(e.target.value)}
+                        placeholder="7"
+                      />
+                    </div>
+                  )}
+                  {recurringInterval === 'yearly' && (
+                    <>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">Month</label>
+                        <select
+                          className="w-full border rounded-md h-10 px-3"
+                          value={monthOfYear}
+                          onChange={(e) => setMonthOfYear(e.target.value)}
+                        >
+                          <option value="1">January</option>
+                          <option value="2">February</option>
+                          <option value="3">March</option>
+                          <option value="4">April</option>
+                          <option value="5">May</option>
+                          <option value="6">June</option>
+                          <option value="7">July</option>
+                          <option value="8">August</option>
+                          <option value="9">September</option>
+                          <option value="10">October</option>
+                          <option value="11">November</option>
+                          <option value="12">December</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">Day of Month (1-31)</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="31"
+                          className="w-full border rounded-md h-10 px-3"
+                          value={dayOfMonth}
+                          onChange={(e) => setDayOfMonth(e.target.value)}
+                          placeholder="25"
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Start Date (Optional - defaults to today)</label>
+                    <input
+                      type="date"
+                      className="w-full border rounded-md h-10 px-3"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      placeholder="When should charges begin?"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">End Date (Optional)</label>
+                    <input
+                      type="date"
+                      className="w-full border rounded-md h-10 px-3"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      placeholder="When should charges stop?"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="md:col-span-2 flex flex-wrap gap-2 mt-2">
                 <label className="relative inline-flex items-center justify-center">

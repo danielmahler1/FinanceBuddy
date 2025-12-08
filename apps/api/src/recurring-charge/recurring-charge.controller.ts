@@ -51,5 +51,10 @@ export class RecurringChargeController {
   remove(@Param('id') id: string, @CurrentUser() user: JwtUser) {
     return this.recurringChargeService.remove(id, user.userId);
   }
+
+  @Post('process-due')
+  processDueCharges(@CurrentUser() user: JwtUser) {
+    return this.recurringChargeService.processDueCharges(user.userId);
+  }
 }
 

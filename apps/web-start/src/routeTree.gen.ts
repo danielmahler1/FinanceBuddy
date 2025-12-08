@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as RecurringChargesRouteImport } from './routes/recurring-charges'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -20,6 +21,11 @@ import { Route as AccountsIdRouteImport } from './routes/accounts.$id'
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecurringChargesRoute = RecurringChargesRouteImport.update({
+  id: '/recurring-charges',
+  path: '/recurring-charges',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
   '/profile': typeof ProfileRoute
+  '/recurring-charges': typeof RecurringChargesRoute
   '/transactions': typeof TransactionsRoute
   '/accounts/$id': typeof AccountsIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
   '/profile': typeof ProfileRoute
+  '/recurring-charges': typeof RecurringChargesRoute
   '/transactions': typeof TransactionsRoute
   '/accounts/$id': typeof AccountsIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/goals': typeof GoalsRoute
   '/profile': typeof ProfileRoute
+  '/recurring-charges': typeof RecurringChargesRoute
   '/transactions': typeof TransactionsRoute
   '/accounts/$id': typeof AccountsIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/goals'
     | '/profile'
+    | '/recurring-charges'
     | '/transactions'
     | '/accounts/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/goals'
     | '/profile'
+    | '/recurring-charges'
     | '/transactions'
     | '/accounts/$id'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/goals'
     | '/profile'
+    | '/recurring-charges'
     | '/transactions'
     | '/accounts/$id'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   GoalsRoute: typeof GoalsRoute
   ProfileRoute: typeof ProfileRoute
+  RecurringChargesRoute: typeof RecurringChargesRoute
   TransactionsRoute: typeof TransactionsRoute
 }
 
@@ -127,6 +140,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recurring-charges': {
+      id: '/recurring-charges'
+      path: '/recurring-charges'
+      fullPath: '/recurring-charges'
+      preLoaderRoute: typeof RecurringChargesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -192,6 +212,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   GoalsRoute: GoalsRoute,
   ProfileRoute: ProfileRoute,
+  RecurringChargesRoute: RecurringChargesRoute,
   TransactionsRoute: TransactionsRoute,
 }
 export const routeTree = rootRouteImport

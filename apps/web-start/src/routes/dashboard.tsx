@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router';
 import { useAuth0 } from '@auth0/auth0-react';
 import {
+  Calendar,
   CreditCard,
   DollarSign,
   LogOut,
@@ -10,9 +11,10 @@ import {
   TrendingDown,
   TrendingUp,
   User,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useApiQuery, useCurrentUser } from '@/integrations/api';
+import { useApiMutation, useApiQuery, useCurrentUser } from '@/integrations/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TransactionActions } from '@/components/TransactionActions';
@@ -40,6 +42,23 @@ type Transaction = {
   vendor: string;
   createdAt: string;
   updatedAt: string;
+};
+
+type RecurringCharge = {
+  id: string;
+  accountId: string;
+  type: string;
+  amount: number;
+  vendor: string;
+  interval: string;
+  startDate: string;
+  endDate?: string;
+  lastProcessedDate?: string;
+  status: boolean;
+  account: {
+    accountType: string;
+    currency: string;
+  };
 };
 
 type AccountSummary = { totals: Array<{ currency: string; total: number }> };
@@ -74,6 +93,24 @@ function Dashboard() {
   const transactionsQ = useApiQuery<Array<Transaction>>(['transactions'], '/transactions');
   const allTransactions = transactionsQ.data ?? [];
 
+  // Automatically process due charges when dashboard loads
+  const processDueMutation = useApiMutation<Record<string, never>, { processed: number }>({
+    path: '/recurring-charges/process-due',
+    method: 'POST',
+    invalidateKeys: [['recurring-charges'], ['transactions'], ['accounts', 'me'], ['accounts', 'me', 'summary']],
+  });
+
+  const hasProcessedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (isAuthenticated && !isLoading && !hasProcessedRef.current) {
+      hasProcessedRef.current = true;
+      processDueMutation.mutateAsync({}).catch(() => {
+        hasProcessedRef.current = false; // Reset on error
+      });
+    }
+  }, [isAuthenticated, isLoading]);
+
   // Year and Month filter state
   const [selectedYear, setSelectedYear] = React.useState<number>(() => {
     return new Date().getFullYear();
@@ -82,6 +119,8 @@ function Dashboard() {
   const [selectedMonth, setSelectedMonth] = React.useState<number>(() => {
     return new Date().getMonth() + 1; // 1-12
   });
+
+  const [showAllTransactions, setShowAllTransactions] = React.useState(false);
 
   const selectedMonthKey = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
 
@@ -368,36 +407,49 @@ function Dashboard() {
                 ) : recentTransactions.length === 0 ? (
                   <div className="text-center text-gray-500">No transactions yet</div>
                 ) : (
-                  <div className="space-y-4">
-                    {recentTransactions.map((transaction) => (
-                      <div
-                        key={transaction.id}
-                        className="flex items-start justify-between border-b pb-3 last:border-0"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">
-                            {transaction.vendor}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {formatRelativeDate(transaction.createdAt)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`font-semibold ${
-                              transaction.amount > 0
-                                ? 'text-green-600'
-                                : 'text-red-600'
-                            }`}
-                          >
-                            {transaction.amount > 0 ? '+' : '-'}$
-                            {Math.abs(transaction.amount).toFixed(2)}
+                  <>
+                    <div className="space-y-4">
+                      {recentTransactions.map((transaction) => (
+                        <div
+                          key={transaction.id}
+                          className="flex items-start justify-between border-b pb-3 last:border-0"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">
+                              {transaction.vendor}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {formatRelativeDate(transaction.createdAt)}
+                            </p>
                           </div>
-                          <TransactionActions transaction={transaction} />
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`font-semibold ${
+                                transaction.amount > 0
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                              }`}
+                            >
+                              {transaction.amount > 0 ? '+' : '-'}$
+                              {Math.abs(transaction.amount).toFixed(2)}
+                            </div>
+                            <TransactionActions transaction={transaction} />
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                    {monthlyTransactions.length > 5 && (
+                      <div className="pt-4">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setShowAllTransactions(true)}
+                        >
+                          View All ({monthlyTransactions.length} transactions)
+                        </Button>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -478,7 +530,7 @@ function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                 <Button asChild variant="outline" className="h-20 flex flex-col gap-2">
                   <Link to="/transactions">
                     <DollarSign className="w-5 h-5" />
@@ -497,9 +549,15 @@ function Dashboard() {
                     <span className="text-sm">View Accounts</span>
                   </Link>
                 </Button>
+                <Button asChild variant="outline" className="h-20 flex flex-col gap-2">
+                  <Link to="/recurring-charges">
+                    <Calendar className="w-5 h-5" />
+                    <span className="text-sm">Recurring Charges</span>
+                  </Link>
+                </Button>
                 <Link to="/profile">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="h-20 flex flex-col gap-2 w-full"
                   >
                     <User className="w-5 h-5" />
@@ -511,6 +569,56 @@ function Dashboard() {
           </Card>
         </div>
       </main>
+
+      {/* View All Transactions Modal */}
+      {showAllTransactions && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">
+                All Transactions - {new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' })} {selectedYear}
+              </h2>
+              <button onClick={() => setShowAllTransactions(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {monthlyTransactions
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-start justify-between border-b pb-3 last:border-0"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">
+                          {transaction.vendor}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatRelativeDate(transaction.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`font-semibold ${
+                            transaction.amount > 0
+                              ? 'text-green-600'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {transaction.amount > 0 ? '+' : '-'}$
+                          {Math.abs(transaction.amount).toFixed(2)}
+                        </div>
+                        <TransactionActions transaction={transaction} />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
