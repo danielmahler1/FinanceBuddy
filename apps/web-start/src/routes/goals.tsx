@@ -6,7 +6,6 @@ import {
   CheckCircle,
   DollarSign,
   Edit,
-  Flag,
   Plus,
   Target,
   Trash2,
@@ -83,12 +82,12 @@ function GoalsPage() {
   });
 
   const updateMutation = useApiMutation<Partial<Goal>, Goal>({
-    endpoint: (vars) => ({ path: `/goals/${selectedGoal?.id}`, method: 'PUT' }),
+    endpoint: () => ({ path: `/goals/${selectedGoal?.id}`, method: 'PUT' }),
     invalidateKeys: [['goals']],
   });
 
   const deleteMutation = useApiMutation<never, void>({
-    endpoint: (vars) => ({ path: `/goals/${selectedGoal?.id}`, method: 'DELETE' }),
+    endpoint: () => ({ path: `/goals/${selectedGoal?.id}`, method: 'DELETE' }),
     invalidateKeys: [['goals']],
   });
 
