@@ -19,7 +19,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { TransactionActions } from '@/components/TransactionActions';
 import { GoalActions } from '@/components/GoalActions';
-import { ExpensePieChart } from '@/components/ExpensePieChart';
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
@@ -393,7 +392,7 @@ function Dashboard() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-6">
             {/* Recent Transactions */}
             <Card>
               <CardHeader>
@@ -455,13 +454,6 @@ function Dashboard() {
                 )}
               </CardContent>
             </Card>
-
-            <ExpensePieChart
-              transactions={allTransactions}
-              selectedYear={selectedYear}
-              selectedMonth={selectedMonth}
-              isLoading={transactionsQ.showLoading}
-            />
 
             {/* Financial Goals */}
             <Card>
