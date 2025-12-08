@@ -45,22 +45,6 @@ type Transaction = {
   updatedAt: string;
 };
 
-type RecurringCharge = {
-  id: string;
-  accountId: string;
-  type: string;
-  amount: number;
-  vendor: string;
-  interval: string;
-  startDate: string;
-  endDate?: string;
-  lastProcessedDate?: string;
-  status: boolean;
-  account: {
-    accountType: string;
-    currency: string;
-  };
-};
 
 type AccountSummary = { totals: Array<{ currency: string; total: number }> };
 
@@ -164,9 +148,16 @@ function Dashboard() {
   });
 
   // Get recent transactions (last 5) for selected month
-  const recentTransactions = [...monthlyTransactions]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const sortedMonthlyTransactions = React.useMemo(() =>
+    [...monthlyTransactions]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [monthlyTransactions]
+  );
+
+  const recentTransactions = React.useMemo(() =>
+    sortedMonthlyTransactions.slice(0, 5),
+    [sortedMonthlyTransactions]
+  );
 
   const monthlyIncome = monthlyTransactions
     .filter((t) => t.amount > 0)
@@ -591,9 +582,7 @@ function Dashboard() {
             </div>
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
-                {monthlyTransactions
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .map((transaction) => (
+                {sortedMonthlyTransactions.map((transaction) => (
                     <div
                       key={transaction.id}
                       className="flex items-start justify-between border-b pb-3 last:border-0"
