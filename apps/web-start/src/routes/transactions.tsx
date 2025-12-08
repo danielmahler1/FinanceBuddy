@@ -431,7 +431,7 @@ function NewTransactionPage() {
                   </>
                 )}
                 {ocrLoading && !camOpen && (
-                  <div className="w-full max-h-80 rounded-lg border bg-gradient-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center p-8 space-y-4">
+                  <div className="w-full max-h-80 rounded-lg border bg-linear-to-br from-blue-50 to-indigo-50 flex flex-col items-center justify-center p-8 space-y-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
                     <div className="text-center">
                       <p className="text-lg font-medium text-gray-900">

@@ -69,7 +69,13 @@ export function ReceiptReview({ parsedData, onAccept, onReject, onEdit }: Receip
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-';
     try {
-      return new Date(dateStr).toLocaleDateString();
+      // Parse date as local time to avoid timezone conversion issues
+      const parts = dateStr.split('-').map(Number);
+      if (parts.length === 3 && parts.every(p => !isNaN(p))) {
+        const [year, month, day] = parts;
+        return new Date(year, month - 1, day).toLocaleDateString();
+      }
+      return dateStr;
     } catch {
       return dateStr;
     }

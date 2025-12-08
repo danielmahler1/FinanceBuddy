@@ -305,7 +305,7 @@ function GoalsPage() {
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3">
                           <div
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all duration-500"
+                            className="bg-linear-to-r from-blue-600 to-purple-600 h-3 rounded-full transition-all duration-500"
                             style={{ width: `${percentage}%` }}
                           ></div>
                         </div>
@@ -429,8 +429,8 @@ function GoalFormModal({
   const [formData, setFormData] = useState({
     name: goal?.name || '',
     description: goal?.description || '',
-    targetAmount: goal?.targetAmount ?? 0,
-    currentAmount: goal?.currentAmount ?? 0,
+    targetAmount: goal?.targetAmount !== undefined ? String(goal.targetAmount) : '',
+    currentAmount: goal?.currentAmount !== undefined ? String(goal.currentAmount) : '',
     category: goal?.category || '',
     priority: goal?.priority || 'medium',
     targetDate: goal?.targetDate
@@ -441,17 +441,18 @@ function GoalFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate numbers
-    if (isNaN(formData.targetAmount) || formData.targetAmount <= 0) {
+    const targetNum = Number(formData.targetAmount);
+    if (!formData.targetAmount || isNaN(targetNum) || targetNum <= 0) {
       alert('Please enter a valid target amount');
       return;
     }
-    
+
     setLoading(true);
     await onSubmit({
       ...formData,
-      targetAmount: Number(formData.targetAmount),
+      targetAmount: targetNum,
       currentAmount: Number(formData.currentAmount) || 0,
       status: goal?.status || 'active',
     });
@@ -459,8 +460,8 @@ function GoalFormModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-2xl w-full my-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -517,10 +518,10 @@ function GoalFormModal({
                   step="0.01"
                   value={formData.targetAmount}
                   onChange={(e) =>
-                    setFormData({ ...formData, targetAmount: parseFloat(e.target.value) || 0 })
+                    setFormData({ ...formData, targetAmount: e.target.value })
                   }
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="5000.00"
+                  placeholder="0.00"
                 />
               </div>
             </div>
@@ -540,7 +541,7 @@ function GoalFormModal({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        currentAmount: parseFloat(e.target.value) || 0,
+                        currentAmount: e.target.value,
                       })
                     }
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -653,7 +654,7 @@ function ContributeModal({
   const remaining = goal.targetAmount - goal.currentAmount;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
