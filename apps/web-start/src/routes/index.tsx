@@ -28,11 +28,9 @@ function RouteComponent() {
       <div className="container mx-auto px-4 py-16 md:py-24">
         <div className="text-center space-y-6 max-w-4xl mx-auto">
           <Badge className="mx-auto w-fit" variant="secondary">
-            Your Personal Finance Companion
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-gray-900">
-            Take Control of Your
-            <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Financial Future</span>
+            <span className="bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> FinanceBuddy</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             FinanceBuddy helps you track expenses, set goals, and make smarter financial decisions. Start your journey to financial freedom today.
